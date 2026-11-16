@@ -1,0 +1,2002 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Magic Board Builder</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=JetBrains+Mono:wght@400;500&family=Nunito+Sans:opsz,wght@6..12,400;6..12,600;6..12,700&display=swap">
+<style>
+/* Workbench layout: editor rail on the left, live board and AO3 code on the right; one column on phones. */
+:root {
+  --bg: #ebe8e1;
+  --panel: #ffffff;
+  --panel-2: #f5f3ee;
+  --ink: #1d1a17;
+  --muted: #5f5850;
+  --line: #d9d3c7;
+  --accent: #a2421d;
+  --accent-ink: #ffffff;
+  --sel: #d99a00;
+  --ok: #1d7a3b;
+  --bad: #b3261e;
+  --f-display: "Barlow Condensed", "Arial Narrow", "Roboto Condensed", sans-serif;
+  --f-body: "Nunito Sans", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, Consolas, "Courier New", monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #14120f; --panel: #1d1a16; --panel-2: #26221d; --ink: #efeae2; --muted: #a79e92;
+    --line: #3a342c; --accent: #f08a5d; --accent-ink: #14120f; --sel: #ffd84a; --ok: #6fd38e; --bad: #ff8f85;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #14120f; --panel: #1d1a16; --panel-2: #26221d; --ink: #efeae2; --muted: #a79e92;
+  --line: #3a342c; --accent: #f08a5d; --accent-ink: #14120f; --sel: #ffd84a; --ok: #6fd38e; --bad: #ff8f85;
+  color-scheme: dark;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font: 15px/1.5 var(--f-body);
+}
+.page {
+  max-width: 1320px;
+  margin: 0 auto;
+  padding-block: 20px 48px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: grid;
+  gap: 16px;
+}
+
+/* ---------- Header ---------- */
+.top { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 12px 24px; }
+.top h1 {
+  margin: 0;
+  font: 700 2.4rem/1 var(--f-display);
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+  text-wrap: balance;
+}
+.top h1 span { color: var(--accent); }
+.top p { margin: 4px 0 0; color: var(--muted); max-width: 62ch; }
+.top-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+
+/* ---------- Panels ---------- */
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 16px;
+  min-width: 0;
+}
+.panel h2 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 12px;
+  font: 700 1.35rem/1.1 var(--f-display);
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+.panel h3 {
+  margin: 0 0 10px;
+  font: 700 1.1rem/1.1 var(--f-display);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.step-no {
+  display: inline-grid;
+  place-items: center;
+  width: 1.6em;
+  height: 1.6em;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-size: 0.9em;
+}
+.muted { color: var(--muted); }
+
+.skin-step { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px 24px; align-items: start; }
+.skin-step ol { margin: 0; padding-left: 1.3em; }
+.skin-step ol li + li { margin-top: 2px; }
+.skin-step .actions { display: flex; flex-direction: column; gap: 8px; align-items: stretch; }
+@media (max-width: 700px) { .skin-step { grid-template-columns: minmax(0, 1fr); } .skin-step .actions { flex-direction: row; flex-wrap: wrap; } }
+
+.work {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: minmax(0, 400px) minmax(0, 1fr);
+  grid-template-areas: "edit board" "edit code";
+  align-items: start;
+}
+.col-edit { grid-area: edit; display: grid; gap: 16px; min-width: 0; }
+.board-panel { grid-area: board; }
+.code-panel { grid-area: code; }
+@media (max-width: 900px) {
+  .work { grid-template-columns: minmax(0, 1fr); grid-template-areas: "board" "edit" "code"; }
+}
+
+/* ---------- Form controls ---------- */
+.field { display: grid; gap: 4px; margin-bottom: 12px; min-width: 0; }
+.field > label, .legend { font-weight: 700; font-size: 0.86rem; }
+.row2 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 0 10px; }
+.row3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0 10px; }
+.span2 { grid-column: span 2; }
+.span3 { grid-column: span 3; }
+input[type="text"], input[type="number"], input[type="url"], select, textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 7px 9px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--panel-2);
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.95rem;
+}
+textarea { resize: vertical; }
+input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+input:disabled + span { opacity: 0.5; }
+.inline { display: flex; gap: 8px; }
+.inline input { flex: 1; min-width: 0; }
+
+.checks { display: grid; gap: 8px; margin-bottom: 12px; }
+.check { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 8px; align-items: start; font-size: 0.92rem; cursor: pointer; }
+.check input { margin: 3px 0 0; width: 16px; height: 16px; accent-color: var(--accent); }
+
+.seg { display: inline-flex; flex-wrap: wrap; border: 1px solid var(--line); border-radius: 7px; overflow: hidden; max-width: 100%; }
+.seg label { position: relative; cursor: pointer; }
+.seg input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
+.seg span { display: block; padding: 6px 12px; font-size: 0.9rem; font-weight: 600; background: var(--panel-2); }
+.seg label + label span { border-left: 1px solid var(--line); }
+.seg input:checked + span { background: var(--accent); color: var(--accent-ink); }
+.seg input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: -3px; }
+
+.btn, .btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border-radius: 7px;
+  font: 600 0.92rem/1.2 var(--f-body);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.btn { background: var(--accent); color: var(--accent-ink); border: 1px solid var(--accent); }
+.btn:hover { filter: brightness(1.08); }
+.btn:disabled { opacity: 0.6; cursor: default; }
+.btn-ghost { background: transparent; color: var(--ink); border: 1px solid var(--line); }
+.btn-ghost:hover { border-color: var(--accent); }
+.btn-ghost.danger { color: var(--bad); }
+.btn-ghost:disabled { opacity: 0.45; cursor: default; border-color: var(--line); }
+
+.hint { margin: 0; font-size: 0.84rem; color: var(--muted); }
+.hint.ok { color: var(--ok); }
+.hint.bad { color: var(--bad); }
+.empty-note { margin: 0; color: var(--muted); }
+.zone-title {
+  margin: 0 0 12px;
+  padding: 6px 10px;
+  border-left: 4px solid var(--sel);
+  background: var(--panel-2);
+  border-radius: 0 6px 6px 0;
+  font-weight: 700;
+}
+
+.lookup-out { display: grid; gap: 6px; }
+.lookup-out:empty { display: none; }
+.results { display: grid; gap: 4px; max-height: 280px; overflow: auto; }
+.result {
+  display: grid;
+  gap: 1px;
+  padding: 6px 9px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--panel-2);
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.9rem;
+  text-align: left;
+  cursor: pointer;
+}
+.result span { color: var(--muted); font-size: 0.8rem; }
+.result:hover { border-color: var(--accent); }
+.lookup-out a, .hint a { color: var(--accent); }
+
+.prints { display: grid; grid-template-columns: repeat(auto-fill, minmax(76px, 1fr)); gap: 6px; max-height: 330px; overflow: auto; padding: 2px; }
+.print {
+  display: grid;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--panel-2);
+  color: var(--muted);
+  font: 600 0.7rem/1.15 var(--f-body);
+  text-align: center;
+  cursor: pointer;
+}
+.print img { width: 100%; height: auto; border-radius: 4px; }
+.print:hover, .print.is-cur { border-color: var(--accent); color: var(--ink); }
+.print.is-cur { outline: 2px solid var(--accent); }
+
+.pic-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: start; }
+.pic-row img { width: 56px; height: auto; border-radius: 3px; border: 1px solid var(--line); }
+.btn-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+
+/* ---------- Preview ---------- */
+.board-panel .hint { margin-bottom: 8px; }
+.preview-bar { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px 16px; align-items: center; margin-bottom: 8px; }
+.preview-bar .hint { margin: 0; }
+.preview { min-width: 0; }
+.preview .mtg-duel { margin-top: 0; }
+#workskin [data-k] { cursor: pointer; }
+#workskin [data-k]:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+#workskin .is-sel { outline: 3px solid var(--sel); outline-offset: 3px; border-radius: 0.3em; }
+#workskin .mtg-pile.is-sel { outline-offset: 2px; }
+#workskin.no-pops .mtg-hover, #workskin.no-pops .mtg-pop { display: none !important; }
+/* The + buttons only exist in the builder, never in the code for AO3. */
+.add-slot {
+  display: inline-grid;
+  place-items: center;
+  width: 4.2em;
+  height: 5.9em;
+  margin: 0.15em;
+  vertical-align: middle;
+  border: 2px dashed rgba(255, 255, 255, 0.45);
+  border-radius: 0.4em;
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.8);
+  font: 700 0.95em/1.1 var(--f-body);
+  cursor: pointer;
+}
+.add-slot:hover { border-color: #ffd84a; color: #ffd84a; }
+.mtg-row .add-slot { width: 6.3em; height: 8.8em; margin: 0.25em 0.2em; }
+.mtg-hand .add-slot { width: 2.6em; height: 3.65em; font-size: 1.3em; }
+.mtg-piles .add-slot { width: 4.4em; height: 6.15em; margin: 0 0.2em; }
+.add-slot b { display: block; font-size: 1.6em; line-height: 1; }
+
+/* ---------- Code output ---------- */
+.code-panel ol { margin: 0 0 12px; padding-left: 1.3em; }
+.code-bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 8px; }
+.status { font-size: 0.86rem; color: var(--ok); font-weight: 600; }
+textarea.code {
+  height: 220px;
+  font: 0.78rem/1.45 var(--f-mono);
+  white-space: pre;
+  overflow: auto;
+}
+details { margin-top: 12px; }
+summary { cursor: pointer; font-weight: 700; }
+details[open] summary { margin-bottom: 8px; }
+.log-preview .mtg-log { margin: 0 0 10px; }
+.legal { margin: 0; font-size: 0.78rem; color: var(--muted); }
+</style>
+</head>
+<body>
+
+
+<script type="text/plain" id="skin-css">/* =====================================================================
+   MAGIC: THE GATHERING DUEL BOARD — AO3 Work Skin
+
+   HOW TO INSTALL
+   AO3 Dashboard → Skins → My Work Skins → Create Work Skin, paste this
+   whole file, save. Then on your work's Edit page pick it under
+   "Select Work Skin". AO3 quietly adds "#workskin" in front of every
+   rule, so these styles only ever touch your own story.
+
+   HOW TO READ THIS FILE (a 30-second CSS primer)
+   - Anything between slash-star and star-slash, like this text, is a
+     comment. The browser ignores it; it's only here for you.
+   - A rule looks like:   .mtg-card { color: red; }
+       .mtg-card   = "every element whose class is mtg-card"
+                     (in the HTML that's  class="mtg-card")
+       { ... }     = the list of looks to give those elements
+       color: red; = one look: a "property" and its "value"
+   - ".mtg-tapped .mtg-face" (two names with a space) means "a mtg-face
+     that sits INSIDE a mtg-tapped". ".mtg-pile.mtg-down" (no space)
+     means "one element that has BOTH classes".
+   - Every class here starts with "mtg-" so it can't clash with AO3's
+     own class names.
+
+   UNITS YOU'LL SEE
+   - em  = relative to the current text size. 1em = one letter-height.
+           Because the whole board is sized in em, it grows and shrinks
+           with the reader's chosen font size.
+   - %   = a share of the space available (50% = half as wide).
+   - px  = a fixed screen pixel. Used only for thin lines.
+
+   COLOURS
+   - #ffd84a is a hex colour (red-green-blue). rgba(0, 0, 0, 0.5) is
+     red, green, blue, then opacity: 0 = invisible, 1 = solid.
+   - Many rules set "background" twice: first a plain colour, then a
+     gradient. Browsers use the last one they understand, so the plain
+     colour is a safety net if a gradient ever isn't supported.
+
+   WHAT AO3 DOESN'T ALLOW, AND SO ISN'T USED HERE
+   - "@media" rules: AO3's cleaner rebuilds work skins without their
+     screen-size conditions, so a rule meant only for phones would
+     apply everywhere. Everything here works at every screen size.
+   - "position: fixed" (pinning something to the reader's screen):
+     AO3 refuses to save a work skin that uses it.
+   ===================================================================== */
+
+
+/* =====================================================================
+   1. THE BOARD FRAME
+   The dark playmat that holds everything. In the HTML it's the
+   outermost <div class="mtg-duel">.
+   ===================================================================== */
+.mtg-duel {
+  margin: 1.5em auto;               /* space above/below; "auto" centres it */
+  max-width: 46em;                  /* never wider than this on big screens */
+  padding: 0.5em;                   /* gap between the edge and the contents */
+  background: #222a3a;              /* plain slate (safety net) */
+  background: radial-gradient(ellipse, #3a4766, #1a1f2c 80%);  /* lighter in the middle, darker at the edges */
+  border: 3px solid #0e121a;
+  border-radius: 0.6em;
+  color: #fff;                      /* default text colour: white */
+  font-family: "Trebuchet MS", "Segoe UI", Verdana, Arial, sans-serif;  /* first font the reader has wins */
+  line-height: 1.2;                 /* tighter line spacing than story text */
+  text-align: left;
+  position: relative;               /* card details (section 12) are placed against this box */
+}
+
+/* AO3 sometimes slips extra line breaks (<br>) and paragraphs (<p>) into
+   pasted HTML. These rules make them invisible and spaceless inside the
+   board, the card panel and the log box, so they can't break the layout. */
+.mtg-duel br, .mtg-spot br, .mtg-log br { display: none; }
+.mtg-duel p, .mtg-spot p, .mtg-log p { margin: 0; padding: 0; }
+/* Where cards sit side by side, a paragraph AO3 adds must not start a new line. */
+.mtg-row p, .mtg-hand p, .mtg-bar p, .mtg-piles p, .mtg-mid p, .mtg-stack p { display: inline; }
+
+
+/* =====================================================================
+   2. PLAYER PLATES (name, life, poison)
+   The opponent's plate sits top-right, the hero's bottom-left.
+   ===================================================================== */
+
+/* The strip each plate sits in (with the player's piles beside it). */
+.mtg-bar { margin: 0.2em 0 0.4em; text-align: left; }
+/* Add mtg-bar-opp to push everything to the right (opponent's side). */
+.mtg-bar-opp { text-align: right; }
+
+/* The dark box itself. */
+.mtg-plate {
+  display: inline-block;            /* only as wide as it needs, so it can sit left or right */
+  min-width: 9em;
+  margin: 0.15em 0;
+  padding: 0.3em 0.6em 0.4em;       /* top, sides, bottom */
+  vertical-align: middle;
+  text-align: left;
+  border-radius: 0.4em;
+  box-shadow: 0 0.15em 0.3em rgba(0, 0, 0, 0.45);
+}
+/* Colour themes: red-bordered for the opponent, blue for the hero. */
+.mtg-plate-opp { background: #3d1c1c; border: 2px solid #d9534f; }
+.mtg-plate-me { background: #172a52; border: 2px solid #4f86e8; }
+/* Add mtg-active to the plate of the player whose turn it is: a gold ring. */
+.mtg-plate.mtg-active { box-shadow: 0 0 0 0.15em #ffd84a, 0 0 0.8em 0.15em rgba(255, 212, 0, 0.5); }
+
+/* Player's name. */
+.mtg-pname {
+  display: block;
+  margin-bottom: 0.1em;
+  font-weight: bold;
+  font-size: 1.05em;
+  text-shadow: 1px 1px 0 #000;
+}
+
+/* The line holding the "LIFE" tag, the number and the poison counter. */
+.mtg-life { display: block; white-space: nowrap; }
+
+/* The little "LIFE" tag. */
+.mtg-life-tag {
+  display: inline-block;
+  margin-right: 0.4em;
+  padding: 0 0.3em;
+  background: #b8322a;
+  color: #ffe9e0;
+  font-weight: bold;
+  font-size: 0.75em;
+  letter-spacing: 0.05em;
+  border-radius: 0.2em;
+  vertical-align: middle;
+}
+
+/* The big life total. Four text-shadows draw an outline; the fifth a drop shadow. */
+.mtg-life-num {
+  font-size: 1.7em;
+  font-weight: bold;
+  color: #ffd84a;
+  text-shadow: 1px 1px 0 #6b3a00, -1px -1px 0 #6b3a00, 1px -1px 0 #6b3a00, -1px 1px 0 #6b3a00, 0 2px 2px #000;
+  vertical-align: middle;
+}
+
+/* Poison counters: a green pill after the life total, e.g. "☣ 3". */
+.mtg-poison {
+  display: inline-block;
+  margin-left: 0.5em;
+  padding: 0 0.45em;
+  background: #2b4f1c;
+  border: 1px solid #8fd16a;
+  border-radius: 1em;
+  color: #d8ffc4;
+  font-size: 0.8em;
+  font-weight: bold;
+  vertical-align: middle;
+}
+
+
+/* =====================================================================
+   3. PILES (Library, Graveyard, Exile) AND THE COMMAND ZONE
+   A small group of card-sized piles beside each plate.
+   ===================================================================== */
+.mtg-piles {
+  display: inline-block;
+  margin: 0.15em 0.4em;
+  vertical-align: middle;
+  font-size: 0.7em;                 /* everything in here is drawn at 70% size */
+  text-align: center;
+  white-space: nowrap;              /* keep the piles in one row */
+}
+
+/* One pile. Two offset shadows behind it make it look like a stack. */
+.mtg-pile {
+  display: inline-block;
+  width: 4.4em;
+  height: 6.15em;
+  margin: 0 0.2em;
+  vertical-align: middle;
+  overflow: hidden;
+  border: 1px solid #111;
+  border-radius: 0.3em;
+  background: #555;
+  text-align: center;
+  white-space: normal;
+  box-shadow: 0.1em 0.12em 0 #0c0c0c, 0.2em 0.24em 0 #050505, 0 0.3em 0.5em rgba(0, 0, 0, 0.5);
+}
+/* An empty pile: just a dashed outline. */
+.mtg-pile-empty { background: rgba(255, 255, 255, 0.07); border: 1px dashed rgba(255, 255, 255, 0.45); box-shadow: none; }
+/* The Exile pile is purple-black, so it never looks like the Graveyard. */
+.mtg-pile-exile { background: #3a2650; background: radial-gradient(circle, #6e4b94, #1f1230); }
+
+/* The big number on a pile, with a black outline so it shows on any colour. */
+.mtg-count {
+  display: block;
+  margin-top: 0.75em;
+  font-size: 1.9em;
+  line-height: 1;
+  font-weight: bold;
+  color: #fff;
+  text-shadow: 2px 2px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000;
+}
+/* The small "LIBRARY" / "GRAVEYARD" / "EXILE" label under it. */
+.mtg-plabel {
+  display: block;
+  margin-top: 0.35em;
+  font-size: 0.62em;
+  font-weight: bold;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: #fff;
+  text-shadow: 1px 1px 0 #000;
+}
+
+
+/* =====================================================================
+   4. THE BATTLEFIELD
+   Each player has a side (mtg-side) holding two rows of cards:
+     mtg-front-row  creatures, planeswalkers, battles (nearest the middle)
+     mtg-back-row   lands, artifacts, enchantments (nearest the player)
+   Rows fill left to right and wrap onto a new line when they run out
+   of room, so the board fits phones without scrolling sideways.
+   ===================================================================== */
+.mtg-side {
+  padding: 0.15em 0.3em;
+  border-radius: 0.4em;
+  font-size: 0.7em;                 /* cards are sized relative to this */
+}
+/* Side tints: red for the opponent, blue for the hero. */
+.mtg-opp { background: rgba(224, 106, 99, 0.1); border: 1px solid rgba(224, 106, 99, 0.45); }
+.mtg-me { background: rgba(90, 143, 238, 0.1); border: 1px solid rgba(90, 143, 238, 0.45); }
+
+.mtg-row {
+  min-height: 3em;                  /* an empty row still shows as a thin strip */
+  padding: 0.3em 0;
+  text-align: center;               /* cards gather in the middle */
+}
+/* A faint dashed line between the two rows of one side. */
+.mtg-row + .mtg-row { border-top: 1px dashed rgba(255, 255, 255, 0.18); }
+
+
+/* =====================================================================
+   5. CARDS
+   Every card has these parts, in this order:
+     <div class="mtg-card ...">     the space the card takes up on the
+                                    board, and the thing readers point at
+       <span class="mtg-badges">    small labels over the card (section 8),
+                                    only if it has any
+       <span class="mtg-face">      what the card looks like
+       a details panel or pop-up    (section 12), only if it has one
+     </div>
+   The face is either a real card picture (<img> inside it, plus
+   mtg-pic on the card) or a drawn card made of three strips:
+     mtg-cname  name     mtg-art  picture box with the mana cost
+     mtg-type   type line
+   The frame colour is a class on the card (section 6).
+   ===================================================================== */
+.mtg-card {
+  display: inline-block;            /* sit side by side in a row */
+  width: 6.3em;                    /* real card proportions: 63 × 88 mm */
+  height: 8.8em;
+  margin: 0.25em 0.2em;
+  vertical-align: middle;
+  text-align: left;
+  cursor: pointer;                  /* tells iPhones the card can be tapped */
+}
+
+.mtg-face {
+  display: block;
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;           /* the frame padding stays inside the card's size */
+  padding: 0.25em;                  /* the coloured frame around the strips */
+  overflow: hidden;
+  background: #999;
+  border: 1px solid #111;
+  border-radius: 0.3em;
+  color: #161616;
+  box-shadow: 0 0.15em 0.3em rgba(0, 0, 0, 0.55);
+}
+/* While the pointer is over a card, a thin yellow outline marks it. */
+.mtg-card:hover .mtg-face { outline: 2px solid #fff36b; }
+
+/* Name strip. Fits two lines; a longer name is cut off. */
+.mtg-cname {
+  display: block;
+  height: 2.2em;
+  overflow: hidden;
+  padding: 0.1em 0.2em;
+  background: rgba(255, 255, 255, 0.7);
+  border-radius: 0.15em;
+  font-size: 0.75em;
+  line-height: 1.1;
+  font-weight: bold;
+}
+
+/* Picture box. Shows the mana cost (or, for a land, the mana it makes).
+   Its colour comes from the frame class (section 6). */
+.mtg-art {
+  display: block;
+  height: 3.4em;
+  margin: 0.15em 0;
+  overflow: hidden;
+  background: #555;
+  border: 1px solid rgba(0, 0, 0, 0.6);
+  line-height: 3.4em;               /* as tall as the box = the symbols sit in the middle */
+  text-align: center;
+  white-space: nowrap;
+}
+
+/* Type line ("Creature — Elf Druid"). One line; a long one ends in "…". */
+.mtg-type {
+  display: block;
+  padding: 0.15em 0.25em;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.7);
+  border-radius: 0.15em;
+  font-size: 0.6em;
+  font-weight: bold;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* A REAL CARD PICTURE as the face: no frame, the picture fills the card.
+   "height: auto" keeps the picture's own shape (Scryfall asks that card
+   pictures are never stretched or squashed). */
+.mtg-pic .mtg-face { padding: 0; background: #111; }
+.mtg-face img { display: block; width: 100%; height: auto; }
+
+
+/* =====================================================================
+   6. FRAME COLOURS
+   One class per colour, on the card (or on a Graveyard pile, to show the
+   colour of its top card):
+     mtg-w white   mtg-u blue   mtg-b black   mtg-r red   mtg-g green
+     mtg-m multicoloured (gold)   mtg-c colourless   mtg-l land
+   Each sets the frame (a top-to-bottom gradient) and the picture box
+   (a glow: bright in the centre, dark at the edges).
+   ===================================================================== */
+.mtg-w .mtg-face, .mtg-pile.mtg-w { background: #ddd5b4; background: linear-gradient(#f4efd9, #c8bd92); }
+.mtg-u .mtg-face, .mtg-pile.mtg-u { background: #2f6db5; background: linear-gradient(#4c8ad1, #1c4a85); }
+.mtg-b .mtg-face, .mtg-pile.mtg-b { background: #3a3538; background: linear-gradient(#5a5357, #1b181a); }
+.mtg-r .mtg-face, .mtg-pile.mtg-r { background: #c4472c; background: linear-gradient(#e0674a, #8f2513); }
+.mtg-g .mtg-face, .mtg-pile.mtg-g { background: #2f8a4c; background: linear-gradient(#4aa865, #1c5a30); }
+.mtg-m .mtg-face, .mtg-pile.mtg-m { background: #d0aa45; background: linear-gradient(#ecd07a, #9c7a20); }
+.mtg-c .mtg-face, .mtg-pile.mtg-c { background: #a9b1b8; background: linear-gradient(#cfd5da, #7d858c); }
+.mtg-l .mtg-face, .mtg-pile.mtg-l { background: #9c8460; background: linear-gradient(#bea57c, #6b5634); }
+
+.mtg-w .mtg-art { background: #efe6c4; background: radial-gradient(circle, #fffbea, #cfc39a); }
+.mtg-u .mtg-art { background: #3c77b8; background: radial-gradient(circle, #8cc2ec, #1b4a86); }
+.mtg-b .mtg-art { background: #403a40; background: radial-gradient(circle, #7a7180, #151215); }
+.mtg-r .mtg-art { background: #c4502e; background: radial-gradient(circle, #f7a072, #861d0e); }
+.mtg-g .mtg-art { background: #3d8f55; background: radial-gradient(circle, #8fd69e, #1b5530); }
+.mtg-m .mtg-art { background: #d8b552; background: radial-gradient(circle, #fff0b8, #a6801f); }
+.mtg-c .mtg-art { background: #b4bcc3; background: radial-gradient(circle, #eef1f4, #7a838b); }
+.mtg-l .mtg-art { background: #a58c64; background: radial-gradient(circle, #e2cfa6, #6a5332); }
+
+
+/* =====================================================================
+   7. MANA SYMBOLS
+   One <span class="mtg-pip mtg-p-..."> per symbol: a coloured coin with
+   its letter or number. Used on drawn cards and in the info panels.
+     mtg-p-w  W   mtg-p-u  U   mtg-p-b  B   mtg-p-r  R   mtg-p-g  G
+     mtg-p-c  colourless (C)   mtg-p-n  numbers, X, tap (↷)
+     mtg-p-h  hybrid and other two-part symbols, e.g. "W/U"
+   ===================================================================== */
+.mtg-pip {
+  display: inline-block;
+  min-width: 1.25em;
+  height: 1.25em;
+  margin: 0 0.06em;
+  padding: 0 0.1em;
+  box-sizing: border-box;
+  border-radius: 1em;               /* a circle, or a pill for "W/U" */
+  background: #ccc5c0;
+  color: #161616;
+  font-size: 0.85em;
+  font-style: normal;
+  font-weight: bold;
+  line-height: 1.25em;
+  text-align: center;
+  text-shadow: none;
+  vertical-align: middle;
+  box-shadow: -0.06em 0.1em 0 rgba(0, 0, 0, 0.55);
+}
+.mtg-p-w { background: #fbf6d8; }
+.mtg-p-u { background: #aad3f0; }
+.mtg-p-b { background: #c9bfbc; }
+.mtg-p-r { background: #f4a283; }
+.mtg-p-g { background: #9ed2ae; }
+.mtg-p-c { background: #d9d6d3; }
+.mtg-p-n { background: #cbc4bf; }
+.mtg-p-h { background: #e3cc85; font-size: 0.7em; }
+
+/* Bigger symbols in a drawn card's picture box. */
+.mtg-art .mtg-pip { font-size: 1.05em; }
+
+
+/* =====================================================================
+   8. CARD STATES AND BADGES
+   ===================================================================== */
+
+/* TAPPED: add mtg-tapped to the card. The card's space turns sideways
+   (wide and short), and the face is turned a quarter-turn to fill it.
+   translate() moves the face so its middle lands on the middle of the
+   sideways space; rotate(90deg) turns it clockwise. */
+.mtg-tapped { width: 8.8em; height: 6.3em; }
+.mtg-tapped .mtg-face {
+  width: 6.3em;
+  height: 8.8em;
+  transform: translate(1.25em, -1.25em) rotate(90deg);
+}
+
+/* FACE-DOWN: add mtg-down to the card and leave its face empty
+   (a morph, a manifest, or a card in a hidden hand). The rings of
+   colour draw a card back. Also used for the Library pile. */
+.mtg-down .mtg-face, .mtg-pile.mtg-down {
+  padding: 0;
+  background: #4f3218;
+  background: radial-gradient(ellipse, #f0b45a 0, #a2501a 14%, #3d6aa6 30%, #16284f 48%, #3b2410 56%, #7a4f26 100%);
+  border: 0.25em solid #3b2410;
+}
+
+/* BADGES are small labels laid over the card, all inside one
+   <span class="mtg-badges"> that comes first in the card. It has no
+   height of its own; it just marks the card's top-left corner, and each
+   badge is placed from there. Because the badges aren't part of the
+   face, they stay upright when the card is tapped. */
+.mtg-badges { display: block; position: relative; height: 0; z-index: 2; }
+
+/* Power/toughness ("3/3"), on the right edge, just above the bottom.
+   It stays clear of the bottom strip of the card, where the artist's
+   name and the copyright line are printed: Scryfall asks that those
+   are never covered. (On a tapped card that strip is on the left.)
+   "top" counts down from the card's top edge, in the badge's own text
+   size, so it differs for tapped cards and the smaller commander. */
+.mtg-pt, .mtg-loy {
+  position: absolute;
+  right: -0.5em;
+  top: 6.8em;
+  height: 1.3em;
+  box-sizing: border-box;
+  padding: 0 0.35em;
+  font-size: 0.9em;
+  font-weight: bold;
+  line-height: 1.2em;
+  white-space: nowrap;
+  box-shadow: 0 0.1em 0.2em rgba(0, 0, 0, 0.6);
+}
+.mtg-tapped .mtg-pt, .mtg-tapped .mtg-loy { top: 5.9em; }
+.mtg-cmd .mtg-pt, .mtg-cmd .mtg-loy { top: 4.4em; }
+.mtg-pt { background: #f1ede0; border: 1px solid #222; border-radius: 0.3em; color: #111; }
+/* Loyalty (planeswalkers) or defense (battles): a dark shield shape. */
+.mtg-loy { background: #1b1b1b; border: 1px solid #ddd; border-radius: 0.2em 0.2em 0.8em 0.8em; color: #fff; }
+
+/* Counters or a short note ("+1/+1 ×2", "Equipped"), top left. */
+.mtg-note {
+  position: absolute;
+  left: -0.35em;
+  top: -0.35em;
+  max-width: 140%;
+  padding: 0.05em 0.4em;
+  overflow: hidden;
+  background: #ffd84a;
+  border: 1px solid #6b5300;
+  border-radius: 1em;
+  color: #241a00;
+  font-size: 0.72em;
+  font-weight: bold;
+  line-height: 1.25;
+  white-space: nowrap;
+  box-shadow: 0 0.1em 0.2em rgba(0, 0, 0, 0.6);
+}
+/* "ATTACKING" / "BLOCKING" ribbon across the middle of the card. */
+.mtg-tag {
+  position: absolute;
+  left: -0.33em;
+  right: -0.33em;
+  top: 5.8em;
+  padding: 0.1em 0;
+  background: #b3261e;
+  color: #fff;
+  font-size: 0.6em;
+  font-weight: bold;
+  letter-spacing: 0.08em;
+  text-align: center;
+  box-shadow: 0 0.1em 0.3em rgba(0, 0, 0, 0.6);
+}
+.mtg-tapped .mtg-tag { top: 4.2em; }
+.mtg-blocking .mtg-tag { background: #2560c4; }
+
+/* Glow rings. Combat: red for attackers, blue for blockers. */
+.mtg-attacking .mtg-face { box-shadow: 0 0 0 0.18em #e8402f, 0 0 0.8em 0.1em rgba(232, 64, 47, 0.8); }
+.mtg-blocking .mtg-face { box-shadow: 0 0 0 0.18em #3d86ff, 0 0 0.8em 0.1em rgba(61, 134, 255, 0.8); }
+/* On the stack, whose spell it is: blue ring (hero's), red ring (opponent's). */
+.mtg-mine .mtg-face { box-shadow: 0 0 0 0.18em #4f86e8, 0 0.15em 0.3em rgba(0, 0, 0, 0.5); }
+.mtg-theirs .mtg-face { box-shadow: 0 0 0 0.18em #e06a63, 0 0.15em 0.3em rgba(0, 0, 0, 0.5); }
+/* The commander, in the command zone: a pale violet ring. */
+.mtg-cmd .mtg-face { box-shadow: 0 0 0 0.18em #c9a6ff, 0 0.15em 0.3em rgba(0, 0, 0, 0.5); }
+/* Golden glow on the card the scene is about. It wins over the others. */
+.mtg-card.mtg-focus .mtg-face { box-shadow: 0 0 0 0.2em #fff36b, 0 0 1em 0.3em #ffd400; }
+
+
+/* =====================================================================
+   9. HANDS
+   A centred row of cards plus a "Hand: 7" pill. Hidden cards are small
+   card backs (mtg-down); revealed cards are bigger, face-up.
+   ===================================================================== */
+.mtg-hand { margin: 0.3em 0; text-align: center; font-size: 0.7em; }
+.mtg-hand .mtg-card { width: 4.2em; height: 5.9em; margin: 0.15em; }
+.mtg-hand .mtg-down { width: 2.6em; height: 3.65em; }
+/* Shrinks a revealed drawn card's strips to fit the smaller card. */
+.mtg-hand .mtg-face { font-size: 0.667em; }
+.mtg-hand .mtg-down .mtg-face { border-width: 0.2em; }
+
+/* The dark rounded "Hand: 7" pill. */
+.mtg-hand-label {
+  display: inline-block;
+  margin-left: 0.5em;
+  padding: 0.1em 0.6em;
+  vertical-align: middle;
+  background: rgba(0, 0, 0, 0.4);
+  border-radius: 1em;
+  font-size: 1.1em;
+  font-weight: bold;
+}
+
+/* The commander sits among the piles, at pile size. */
+.mtg-piles .mtg-card { width: 4.4em; height: 6.15em; margin: 0 0.2em; white-space: normal; }
+.mtg-piles .mtg-face { font-size: 0.7em; }
+
+
+/* =====================================================================
+   10. THE MIDDLE STRIP: turn, phase and the stack
+   ===================================================================== */
+.mtg-mid {
+  margin: 0.35em 0;
+  padding: 0.3em;
+  background: rgba(0, 0, 0, 0.35);
+  border-radius: 0.4em;
+  text-align: center;
+}
+
+/* "Turn 5 · Jace" box. */
+.mtg-turn {
+  display: inline-block;
+  margin: 0.1em 0.4em;
+  padding: 0.15em 0.6em;
+  background: #ece7d8;
+  border: 0.12em solid #8a8a8a;
+  border-radius: 0.35em;
+  color: #2f3f78;
+  font-weight: bold;
+  vertical-align: middle;
+}
+
+/* The phase track: every phase in a row, the current one lit up gold. */
+.mtg-phases { display: inline-block; vertical-align: middle; }
+.mtg-ph {
+  display: inline-block;
+  margin: 0.1em 0.05em;
+  padding: 0.15em 0.45em;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 1em;
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 0.75em;
+  font-weight: bold;
+}
+.mtg-ph-on { background: #ffd84a; color: #2a1f00; box-shadow: 0 0 0.5em rgba(255, 216, 74, 0.6); }
+
+/* The stack: spells and abilities waiting to resolve, newest first. */
+.mtg-stack { display: block; margin-top: 0.3em; font-size: 0.7em; }
+.mtg-stack-label {
+  display: inline-block;
+  margin-right: 0.4em;
+  padding: 0.1em 0.6em;
+  vertical-align: middle;
+  background: rgba(0, 0, 0, 0.4);
+  border-radius: 1em;
+  font-size: 1.1em;
+  font-weight: bold;
+}
+
+
+/* =====================================================================
+   11. CARD INFO PANEL
+   One card's full details. Works inside the board or on its own in the
+   story, so it sets its own font. Each part is on its own line:
+     mtg-spot-img    the card picture (optional), on the left
+     mtg-spot-name   name, then mtg-spot-cost (mana symbols) after it
+     mtg-spot-type   type line (green)
+     mtg-spot-text   rules text; one mtg-spot-line per ability
+     mtg-spot-flavor flavour text (italic)
+     mtg-spot-stats  power/toughness or loyalty
+   ===================================================================== */
+.mtg-spot {
+  display: block;
+  overflow: hidden;                 /* makes the panel tall enough to fit the picture */
+  margin: 0.6em 0 0.2em;
+  padding: 0.5em 0.75em 0.6em;
+  background: #20283a;
+  background: linear-gradient(#2a3349, #161b27);
+  border: 2px solid #6b7fd6;
+  border-radius: 0.4em;
+  box-shadow: 0 0.15em 0.3em rgba(0, 0, 0, 0.45);
+  color: #f4f4f4;
+  font-family: "Trebuchet MS", "Segoe UI", Verdana, Arial, sans-serif;
+  line-height: 1.35;
+  text-align: left;
+  white-space: normal;
+  cursor: auto;
+}
+/* The picture sits on the left; the text flows on its right. */
+.mtg-spot-img { float: left; width: 8em; margin: 0.1em 0.8em 0.3em 0; }
+.mtg-spot-img img { display: block; width: 100%; height: auto; border-radius: 0.4em; box-shadow: 0 0.15em 0.4em rgba(0, 0, 0, 0.5); }
+
+.mtg-spot-name { color: #ffe14d; font-size: 1.25em; font-weight: bold; text-shadow: 1px 1px 0 #000; }
+.mtg-spot-cost { margin-left: 0.3em; white-space: nowrap; }
+.mtg-spot-type { display: block; color: #a6e88a; font-weight: bold; }
+.mtg-spot-text { display: block; margin-top: 0.3em; }
+.mtg-spot-line { display: block; margin-bottom: 0.25em; }
+.mtg-spot-flavor { display: block; margin-top: 0.3em; color: #c9cfdd; font-style: italic; }
+.mtg-spot-stats {
+  display: inline-block;
+  margin-top: 0.3em;
+  padding: 0.1em 0.5em;
+  background: rgba(0, 0, 0, 0.35);
+  border-radius: 0.25em;
+  color: #ffd84a;
+  font-weight: bold;
+}
+/* Mana symbols inside the panel's text. */
+.mtg-spot .mtg-pip { font-size: 0.75em; }
+.mtg-spot-cost .mtg-pip { font-size: 0.85em; }
+
+
+/* =====================================================================
+   12. POINT AT A CARD TO SEE IT
+   AO3 doesn't allow scripts, so a card carries its own hidden extras,
+   and pointing at the card (or tapping it on a phone) shows them:
+     mtg-hover  a full info panel (section 11), last thing in the card
+     mtg-pop    just the big card picture:
+                  <span class="mtg-pop"><img src="LINK" alt="Name" width="200"></span>
+   Either one opens right under the card, across the width of the board,
+   so it's next to the card even on a phone, where the board can be
+   taller than the screen. Give a card one or the other, not both: only
+   one shows at a time, so a picture never covers the panel's words.
+
+   How it's placed: "position: absolute" lifts it out of the layout,
+   and sideways it's measured against the whole board (.mtg-duel), not
+   the card, so it can't spill off the edge of a phone screen. Up and
+   down, no "top" is given, so it stays where it would have been: just
+   under its card.
+   ===================================================================== */
+.mtg-hover {
+  display: none;                    /* hidden until its card is pointed at */
+  position: absolute;
+  left: 0.5em;                      /* the board's edges, less a small gap */
+  right: 0.5em;
+  margin: 0.3em 0 0;                /* a small gap under the card */
+  z-index: 10;                      /* drawn above everything else */
+  font-size: 1.43em;                /* cards are drawn at 70% size; this undoes it (1 ÷ 0.7) */
+  border-color: #ffd84a;            /* gold edge, so it's clear this is the pointed-at card */
+  box-shadow: 0 0.3em 1.5em rgba(0, 0, 0, 0.7);
+}
+.mtg-card:hover .mtg-hover { display: block; }
+
+.mtg-pop {
+  display: none;
+  position: absolute;
+  left: 0;
+  right: 0;
+  width: 14em;                      /* about 220px at normal text size */
+  max-width: 70%;                   /* but never more than most of the board's width */
+  margin: 0.3em auto 0;             /* "auto" on both sides centres it on the board */
+  z-index: 10;
+  padding: 0.3em;
+  font-size: 1.43em;
+  background: #111;
+  border: 2px solid #ffd84a;
+  border-radius: 0.6em;
+  box-shadow: 0 0.3em 1.5em rgba(0, 0, 0, 0.7);
+}
+.mtg-card:hover .mtg-pop { display: block; }
+.mtg-pop img { display: block; width: 100%; height: auto; border-radius: 0.45em; }
+
+/* A tapped card's face still takes up its upright height in the
+   layout (turning it doesn't change that), which would leave a gap
+   above the panel. This pulls the panel up to the card's real bottom. */
+.mtg-tapped .mtg-hover, .mtg-tapped .mtg-pop { margin-top: -1.5em; }
+
+/* The small hint under the board: "Point at or tap a card…" */
+.mtg-tip { display: block; margin-top: 0.4em; color: rgba(255, 255, 255, 0.7); font-size: 0.8em; text-align: center; }
+
+
+/* =====================================================================
+   13. LIFE LOG LINE
+   A dark banner for attacks, damage and life gain, used in the story
+   between boards. The red stripe means life lost; add mtg-log-heal to
+   turn the stripe and the number green for life gained.
+   ===================================================================== */
+.mtg-log {
+  display: block;
+  max-width: 46em;
+  margin: 1em auto;
+  padding: 0.45em 0.75em;
+  background: #1d1d26;
+  border-left: 0.35em solid #e0524a;
+  border-radius: 0.3em;
+  color: #f1f1f1;
+  font-family: "Trebuchet MS", "Segoe UI", Verdana, Arial, sans-serif;
+  font-weight: bold;
+  line-height: 1.4;
+  text-align: left;
+}
+.mtg-log-act { display: block; color: #ffd84a; }
+.mtg-delta { margin-left: 0.4em; color: #ff6b5e; }
+.mtg-log-heal { border-left-color: #4cc94a; }
+.mtg-log-heal .mtg-delta { color: #7be37a; }
+</script>
+
+<div class="page">
+  <header class="top">
+    <div>
+      <h1>Magic Board <span>Builder</span></h1>
+      <p>Build a Magic: The Gathering board for your AO3 fic by clicking and typing. No code to write: copy the result into your chapter.</p>
+    </div>
+    <div class="top-actions">
+      <button type="button" class="btn-ghost" id="example-btn">Load the example game</button>
+      <button type="button" class="btn-ghost danger" id="clear-btn">Clear the board</button>
+    </div>
+  </header>
+
+  <section class="panel" aria-labelledby="skin-h">
+    <h2 id="skin-h"><span class="step-no">1</span> Install the Work Skin (once)</h2>
+    <div class="skin-step">
+      <ol>
+        <li>On AO3, go to <b>Dashboard → Skins → My Work Skins → Create Work Skin</b>.</li>
+        <li>Give it any title, paste the Work Skin into the <b>CSS</b> box, and submit.</li>
+        <li>On your fic's <b>Edit</b> page, pick it under <b>Select Work Skin</b> and post.</li>
+      </ol>
+      <div class="actions">
+        <button type="button" class="btn" id="copy-skin">Copy the Work Skin</button>
+        <span class="status" id="skin-status" aria-live="polite"></span>
+      </div>
+    </div>
+    <details>
+      <summary>Show the Work Skin code</summary>
+      <textarea class="code" id="skin-out" readonly spellcheck="false" aria-label="Work Skin CSS"></textarea>
+    </details>
+  </section>
+
+  <div class="work">
+    <div class="col-edit">
+      <section class="panel" id="zone-panel" aria-labelledby="zone-h">
+        <h2 id="zone-h"><span class="step-no">2</span> Edit a card</h2>
+        <div id="zone-editor"></div>
+      </section>
+
+      <section class="panel" aria-labelledby="players-h">
+        <h3 id="players-h">Players and turn</h3>
+        <div class="row3">
+          <div class="field span3"><label for="opp-name">Opponent (top)</label><input type="text" id="opp-name" data-p="opp.name"></div>
+          <div class="field"><label for="opp-life">Life</label><input type="number" id="opp-life" min="-999" max="9999" data-p="opp.life"></div>
+          <div class="field"><label for="opp-poison">Poison</label><input type="number" id="opp-poison" min="0" max="99" data-p="opp.poison"></div>
+          <div class="field"><label for="opp-hand">Cards in hand</label><input type="number" id="opp-hand" min="0" max="20" data-p="opp.hand"></div>
+          <div class="field span3"><label for="me-name">Hero (bottom)</label><input type="text" id="me-name" data-p="me.name"></div>
+          <div class="field"><label for="me-life">Life</label><input type="number" id="me-life" min="-999" max="9999" data-p="me.life"></div>
+          <div class="field"><label for="me-poison">Poison</label><input type="number" id="me-poison" min="0" max="99" data-p="me.poison"></div>
+          <div class="field"><label for="me-hand">Cards in hand</label><input type="number" id="me-hand" min="0" max="20" data-p="me.hand"></div>
+          <div class="field"><label for="turn">Turn</label><input type="number" id="turn" min="1" max="999" data-p="turn"></div>
+          <div class="field span2"><label for="active">Whose turn</label><select id="active" data-p="active"></select></div>
+          <div class="field span3"><label for="phase">Phase or step</label><select id="phase" data-p="phase"></select></div>
+        </div>
+        <label class="check"><input type="checkbox" id="show-info" data-p="showInfo"><span>Show the highlighted card's details under the board</span></label>
+        <p class="hint" id="info-note"></p>
+      </section>
+
+      <section class="panel" aria-labelledby="log-h">
+        <h3 id="log-h">Life line (optional)</h3>
+        <p class="hint" style="margin-bottom:10px">A banner for attacks, burn and life gain, to put in the story between boards.</p>
+        <div class="field"><label for="log-text">What happened</label><input type="text" id="log-text" data-l="text"></div>
+        <div class="row2">
+          <div class="field"><label for="log-who">Whose life changes</label><select id="log-who" data-l="who"></select></div>
+          <div class="field"><label for="log-delta">Change (−3 = damage)</label><input type="number" id="log-delta" data-l="delta"></div>
+        </div>
+        <div class="log-preview" id="workskin-log"><div id="log-preview"></div></div>
+        <div class="code-bar">
+          <button type="button" class="btn" id="copy-log">Copy life line</button>
+          <button type="button" class="btn-ghost" id="apply-log">Apply to the board's life totals</button>
+          <span class="status" id="log-status" aria-live="polite"></span>
+        </div>
+      </section>
+    </div>
+
+    <section class="panel board-panel" aria-labelledby="board-h">
+      <h2 id="board-h">Live preview</h2>
+      <div class="preview-bar">
+        <p class="hint">Click any card, pile or <b>+</b> to edit it. Point at cards to see what readers will see.</p>
+        <label class="check" style="font-size:0.84rem"><input type="checkbox" id="show-pops" checked><span>Show card details on pointing</span></label>
+      </div>
+      <div id="workskin" class="preview"><div id="preview"></div></div>
+    </section>
+
+    <section class="panel code-panel" aria-labelledby="code-h">
+      <h2 id="code-h"><span class="step-no">3</span> Copy into your chapter</h2>
+      <ol>
+        <li>In your chapter's editor on AO3, switch to <b>HTML</b> (not Rich Text).</li>
+        <li>Paste the board where you want it in the story, then preview or post.</li>
+      </ol>
+      <div class="code-bar">
+        <button type="button" class="btn" id="copy-board">Copy board code</button>
+        <span class="status" id="board-status" aria-live="polite"></span>
+      </div>
+      <textarea class="code" id="board-out" readonly spellcheck="false" aria-label="Board code for AO3"></textarea>
+      <details id="load-box">
+        <summary>Edit a board you made before</summary>
+        <p class="hint" style="margin-bottom:8px">Paste a board's code here (for example, copied back out of your chapter's HTML) to keep editing it, such as for the next turn.</p>
+        <textarea id="load-in" rows="5" spellcheck="false" aria-label="Board code to load"></textarea>
+        <div class="code-bar" style="margin-top:8px">
+          <button type="button" class="btn" id="load-btn">Load this board</button>
+          <span class="hint" id="load-status" aria-live="polite"></span>
+        </div>
+      </details>
+      <p class="hint" style="margin-top:12px">Your board is saved in this browser as you work. Card details and pictures come from Scryfall's free card database.</p>
+      <p class="legal" style="margin-top:6px">Unofficial Fan Content permitted under the Wizards of the Coast Fan Content Policy. Not approved or endorsed by Wizards. Portions of the materials used are property of Wizards of the Coast. ©Wizards of the Coast LLC.</p>
+    </section>
+  </div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+  var $ = function (s, el) { return (el || document).querySelector(s); };
+  var esc = function (s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); };
+  var clampInt = function (v, lo, hi) { var n = parseInt(v, 10); if (isNaN(n)) n = lo < 0 && hi > 0 ? 0 : lo; return Math.max(lo, Math.min(hi, n)); };
+  var forEach = function (list, fn) { Array.prototype.forEach.call(list, fn); };
+
+  /* ---------- Magic vocabulary ---------- */
+  var FRAMES = [["w", "White"], ["u", "Blue"], ["b", "Black"], ["r", "Red"], ["g", "Green"], ["m", "Multicolored (gold)"], ["c", "Colorless (artifact)"], ["l", "Land"]];
+  var FRAME_IDS = FRAMES.map(function (f) { return f[0]; });
+  /* Every step of a turn: [id, name in the menu, which part of the phase track it lights up]. */
+  var PHASES = [["untap", "Untap step", "untap"], ["upkeep", "Upkeep", "upkeep"], ["draw", "Draw step", "draw"], ["main1", "Main phase 1", "main1"],
+    ["combat", "Beginning of combat", "combat"], ["attackers", "Declare attackers", "combat"], ["blockers", "Declare blockers", "combat"],
+    ["damage", "Combat damage", "combat"], ["endcombat", "End of combat", "combat"], ["main2", "Main phase 2", "main2"], ["end", "End step", "end"], ["cleanup", "Cleanup", "end"]];
+  var TRACK = [["untap", "Untap"], ["upkeep", "Upkeep"], ["draw", "Draw"], ["main1", "Main 1"], ["combat", "Combat"], ["main2", "Main 2"], ["end", "End"]];
+  /* What the lit-up pill says when the step is part of a bigger phase. */
+  var LIT = { attackers: "Combat: Attackers", blockers: "Combat: Blockers", damage: "Combat: Damage", endcombat: "Combat: End", cleanup: "End: Cleanup" };
+  var PILE_LABEL = { library: "Library", gy: "Graveyard", exile: "Exile" };
+  var ROW_NAME = { front: "front row", back: "back row", hand: "hand" };
+  var SIDES = ["opp", "me"];
+
+  function newCard() {
+    return { name: "", frame: "c", cost: "", produced: "", typeLine: "", text: "", flavor: "", power: "", toughness: "", loyalty: "",
+      img: "", prints: "", usePic: true, show: "panel", glow: false, faceDown: false, tapped: false, combat: "", note: "", revealed: false, owner: "me" };
+  }
+  function handOf(n) { var a = []; for (var i = 0; i < n; i++) a.push(newCard()); return a; }
+  function newSide(name) {
+    return { name: name, life: 20, poison: 0, library: 53, gy: { count: 0, top: "c" }, exile: 0, cmd: null, hand: handOf(7), front: [], back: [] };
+  }
+  function emptyState() {
+    return { v: 1, opp: newSide("Opponent"), me: newSide("Hero"), turn: 1, active: "me", phase: "main1", stack: [], showInfo: true,
+      log: { text: "⚔ Attack!", who: "opp", delta: -3 } };
+  }
+
+  /* ---------- The example game ---------- */
+  var SF_IMG = "https://cards.scryfall.io/normal/front/";
+  function card(o) { return Object.assign(newCard(), o); }
+  var EX = {
+    shivan: { name: "Shivan Dragon", frame: "r", cost: "{4}{R}{R}", typeLine: "Creature — Dragon", text: "Flying\n{R}: This creature gets +1/+0 until end of turn.",
+      flavor: "The undisputed master of the mountains of Shiv.", power: "5", toughness: "5", img: SF_IMG + "7/0/702c4781-670b-49ae-b511-90ed119841b0.jpg?1787562519" },
+    bears: { name: "Grizzly Bears", frame: "g", cost: "{1}{G}", typeLine: "Creature — Bear", power: "2", toughness: "2",
+      flavor: "\"We cannot forget that among all of Dominaria's wonders, a system of life exists, with prey and predators that will never fight wars nor vie for ancient power.\" —Jolrael, empress of beasts",
+      img: SF_IMG + "4/0/409f9b88-f03e-40b6-9883-68c14c37c0de.jpg?1783943001" },
+    elves: { name: "Llanowar Elves", frame: "g", cost: "{G}", typeLine: "Creature — Elf Druid", text: "{T}: Add {G}.", power: "1", toughness: "1",
+      img: SF_IMG + "6/a/6a0b230b-d391-4998-a3f7-7b158a0ec2cd.jpg?1783909057" },
+    mountain: { name: "Mountain", frame: "l", produced: "{R}", typeLine: "Basic Land — Mountain", text: "({T}: Add {R}.)", show: "pic",
+      img: SF_IMG + "b/9/b92c8925-ecfc-4ece-b83a-f12e98a938ab.jpg?1783930645" },
+    forest: { name: "Forest", frame: "l", produced: "{G}", typeLine: "Basic Land — Forest", text: "({T}: Add {G}.)", show: "pic",
+      img: SF_IMG + "3/2/3279314f-d639-4489-b2ab-3621bb3ca64b.jpg?1783930641" },
+    island: { name: "Island", frame: "l", produced: "{U}", typeLine: "Basic Land — Island", text: "({T}: Add {U}.)", show: "pic",
+      img: SF_IMG + "f/c/fc9a66a1-367c-4035-a22e-00fab55be5a0.jpg?1783930645" },
+    plains: { name: "Plains", frame: "l", produced: "{W}", typeLine: "Basic Land — Plains", text: "({T}: Add {W}.)", show: "pic",
+      img: SF_IMG + "4/b/4be96696-aff8-4ef9-97dc-8221ef745de9.jpg?1783930647" },
+    angel: { name: "Serra Angel", frame: "w", cost: "{3}{W}{W}", typeLine: "Creature — Angel", text: "Flying\nVigilance (Attacking doesn't cause this creature to tap.)",
+      flavor: "Follow the light. In its absence, follow her.", power: "4", toughness: "4", img: SF_IMG + "b/8/b8c5e74c-96e7-4a1f-93b7-14d776fe4b2d.jpg?1787563091" },
+    jace: { name: "Jace Beleren", frame: "u", cost: "{1}{U}{U}", typeLine: "Legendary Planeswalker — Jace", text: "+2: Each player draws a card.\n−1: Target player draws a card.\n−10: Target player mills twenty cards.",
+      loyalty: "3", img: SF_IMG + "8/0/806d4e61-004f-4e52-b2e8-ba11b922cc7d.jpg?1783915442" },
+    bolt: { name: "Lightning Bolt", frame: "r", cost: "{R}", typeLine: "Instant", text: "Lightning Bolt deals 3 damage to any target.",
+      flavor: "The sparkmage shrieked, calling on the rage of the storms of his youth. To his surprise, the sky responded with a fierce energy he'd never thought to see again.",
+      img: SF_IMG + "4/3/435589bb-27c6-4a6d-9d63-394d5092b9d8.jpg?1783942371" },
+    counter: { name: "Counterspell", frame: "u", cost: "{U}{U}", typeLine: "Instant", text: "Counter target spell.", img: SF_IMG + "4/f/4f616706-ec97-4923-bb1e-11a69fbaa1f8.jpg?1783909630" },
+    growth: { name: "Giant Growth", frame: "g", cost: "{G}", typeLine: "Instant", text: "Target creature gets +3/+3 until end of turn.",
+      img: SF_IMG + "d/4/d4db271b-b7f2-4a12-b606-2215bab4ac17.jpg?1783943002" }
+  };
+  function exampleState() {
+    var s = emptyState(), ex = function (k, o) { return card(Object.assign({}, EX[k], o || {})); };
+    s.opp = { name: "Jace", life: 14, poison: 0, library: 41, gy: { count: 3, top: "u" }, exile: 0, cmd: null, hand: handOf(4),
+      back: [ex("island", { tapped: true }), ex("island", { tapped: true }), ex("island"), ex("plains"), ex("plains")],
+      front: [ex("angel"), ex("jace")] };
+    s.me = { name: "Chandra", life: 17, poison: 0, library: 42, gy: { count: 2, top: "r" }, exile: 1, cmd: null,
+      hand: [newCard(), newCard(), ex("growth", { revealed: true })],
+      front: [ex("shivan", { tapped: true, combat: "atk", glow: true }), ex("bears", { note: "+1/+1 ×1", power: "3", toughness: "3" }), ex("elves", { tapped: true })],
+      back: [ex("mountain", { tapped: true }), ex("mountain"), ex("mountain"), ex("forest"), ex("forest")] };
+    s.stack = [ex("counter", { owner: "opp" }), ex("bolt", { owner: "me" })];
+    s.turn = 7; s.active = "me"; s.phase = "attackers";
+    s.log = { text: "⚔ Shivan Dragon attacks Jace!", who: "opp", delta: -5 };
+    return s;
+  }
+
+  /* ---------- Mana symbols ---------- */
+  function pip(sym) {
+    var s = String(sym).toUpperCase(), cls = "n", t = s;
+    if (/^[WUBRG]$/.test(s)) cls = s.toLowerCase();
+    else if (s === "C") cls = "c";
+    else if (s === "T") t = "↷";
+    else if (s === "Q") t = "↶";
+    else if (s === "S") t = "❄";
+    else if (/^[WUBRG]\/P$/.test(s)) { cls = s.charAt(0).toLowerCase(); t = "Φ"; }
+    else if (s.indexOf("/") >= 0) cls = "h";
+    return '<span class="mtg-pip mtg-p-' + cls + '">' + esc(t) + "</span>";
+  }
+  /* "{2}{U}{U}" (or plain "2UU") → coloured mana coins. */
+  function pipsHTML(cost) {
+    var s = String(cost || "").trim();
+    if (!s) return "";
+    if (s.indexOf("{") < 0) s = s.replace(/\d+|[WUBRGCXSTQ]/gi, function (m) { return "{" + m + "}"; });
+    var out = [];
+    s.replace(/\{([^}]+)\}/g, function (m, sym) { out.push(pip(sym)); return m; });
+    return out.join("");
+  }
+  /* Rules text: escaped, with {symbols} turned into coins. */
+  function richText(t) { return esc(t).replace(/\{([^}]+)\}/g, function (m, sym) { return pip(sym); }); }
+  /* Reading back: a coin turns into its {symbol} again. */
+  function symOf(el) {
+    var t = el.textContent.trim(), m = el.className.match(/mtg-p-([a-z])/), cls = m ? m[1] : "n";
+    if (t === "↷") return "T"; if (t === "↶") return "Q"; if (t === "❄") return "S";
+    if (t === "Φ") return cls.toUpperCase() + "/P";
+    return t;
+  }
+  function textWithSymbols(el) {
+    if (!el) return "";
+    var copy = el.cloneNode(true);
+    forEach(copy.querySelectorAll(".mtg-pip"), function (p) { p.replaceWith("{" + symOf(p) + "}"); });
+    return copy.textContent.replace(/\s+/g, " ").trim();
+  }
+
+  /* ---------- Building the AO3 code ---------- */
+  function frameName(f) { for (var i = 0; i < FRAMES.length; i++) if (FRAMES[i][0] === f) return FRAMES[i][1]; return "Card"; }
+  function showsPic(c) { return !!(c.usePic && c.img); }
+  function isBattle(c) { return /\bBattle\b/.test(c.typeLine); }
+  function ptText(c) { return c.power !== "" || c.toughness !== "" ? (c.power === "" ? "?" : c.power) + "/" + (c.toughness === "" ? "?" : c.toughness) : ""; }
+
+  function faceHTML(c, ctx) {
+    if (showsPic(c)) {
+      var w = ctx === "field" || ctx === "stack" ? 63 : 44;
+      return '<span class="mtg-face"><img src="' + esc(c.img) + '" alt="' + esc(c.name || "Card") + '" width="' + w + '"></span>';
+    }
+    var art = pipsHTML(c.cost || c.produced) || "&nbsp;";
+    return '<span class="mtg-face"><span class="mtg-cname">' + esc(c.name || "?") + '</span><span class="mtg-art">' + art +
+      '</span><span class="mtg-type">' + esc(c.typeLine || frameName(c.frame)) + "</span></span>";
+  }
+  function badgesHTML(c, ctx) {
+    var L = [];
+    if (ctx === "hand") return "";
+    if (c.loyalty !== "") L.push('<span class="mtg-loy">' + esc(c.loyalty) + "</span>");
+    else if (ptText(c)) L.push('<span class="mtg-pt">' + esc(ptText(c)) + "</span>");
+    if (c.note) L.push('<span class="mtg-note">' + esc(c.note) + "</span>");
+    if (ctx === "field" && c.combat) L.push('<span class="mtg-tag">' + (c.combat === "atk" ? "ATTACKING" : "BLOCKING") + "</span>");
+    return L.length ? '<span class="mtg-badges">' + L.join("") + "</span>" : "";
+  }
+  /* One card anywhere on the board. ctx = field, hand, stack or cmd.
+     extra = preview-only attributes (click target), never in the AO3 code. */
+  function cardHTML(c, ctx, extra, selCls) {
+    extra = extra || ""; selCls = selCls || "";
+    var cls = ["mtg-card"];
+    if (ctx === "hand" && !c.revealed) return '<div class="mtg-card mtg-down' + selCls + '"' + extra + '><span class="mtg-face">&nbsp;</span></div>';
+    if (c.faceDown) {
+      cls.push("mtg-down");
+    } else {
+      cls.push("mtg-" + c.frame);
+      if (showsPic(c)) cls.push("mtg-pic");
+    }
+    if (ctx === "field") {
+      if (c.tapped) cls.push("mtg-tapped");
+      if (c.combat) cls.push(c.combat === "atk" ? "mtg-attacking" : "mtg-blocking");
+    }
+    if (ctx === "stack") cls.push(c.owner === "opp" ? "mtg-theirs" : "mtg-mine");
+    if (ctx === "cmd") cls.push("mtg-cmd");
+    if (c.glow && !c.faceDown) cls.push("mtg-focus");
+    var L = ['<div class="' + cls.join(" ") + selCls + '"' + extra + ">"];
+    L.push(badgesHTML(c, ctx));
+    L.push(c.faceDown ? '<span class="mtg-face">&nbsp;</span>' : faceHTML(c, ctx));
+    if (!c.faceDown) {
+      if (c.show === "panel") L.push(spotHTML(c, true));
+      else if (c.show === "pic" && c.img) L.push('<span class="mtg-pop"><img src="' + esc(c.img) + '" alt="' + esc(c.name || "Card") + ' card" width="200"></span>');
+    }
+    L.push("</div>");
+    return L.join("\n").replace(/\n\n+/g, "\n");
+  }
+  function spotHTML(c, hover) {
+    var L = ['<div class="mtg-spot' + (hover ? " mtg-hover" : "") + '">'];
+    if (c.img) L.push('<span class="mtg-spot-img"><img src="' + esc(c.img) + '" alt="' + esc(c.name || "Card") + ' card" width="140"></span>');
+    L.push('<span class="mtg-spot-head"><span class="mtg-spot-name">' + esc(c.name || "Unnamed card") + "</span>" +
+      (c.cost ? ' <span class="mtg-spot-cost">' + pipsHTML(c.cost) + "</span>" : "") + "</span>");
+    L.push('<span class="mtg-spot-type">' + esc(c.typeLine || frameName(c.frame)) + "</span>");
+    var lines = String(c.text || "").split(/\s*\n\s*/).filter(function (l) { return l.trim(); });
+    if (lines.length) L.push('<span class="mtg-spot-text">' + lines.map(function (l) { return '<span class="mtg-spot-line">' + richText(l) + "</span>"; }).join("") + "</span>");
+    if (c.flavor) L.push('<span class="mtg-spot-flavor">' + esc(c.flavor.replace(/\s*\n\s*/g, " ")) + "</span>");
+    if (c.loyalty !== "") L.push('<span class="mtg-spot-stats">' + (isBattle(c) ? "Defense " : "Loyalty ") + esc(c.loyalty) + "</span>");
+    else if (ptText(c)) L.push('<span class="mtg-spot-stats">' + esc(ptText(c)) + "</span>");
+    L.push("</div>");
+    return L.join("\n");
+  }
+
+  /* Preview-only: what makes a card or pile clickable in the builder. */
+  function pv(preview, sel, k) { return preview ? { extra: ' data-k="' + k + '" tabindex="0"', cls: sel === k ? " is-sel" : "" } : { extra: "", cls: "" }; }
+  function addBtn(preview, where, label) {
+    return preview ? '<button type="button" class="add-slot" data-add="' + where + '" aria-label="' + esc(label) + '"><span><b>+</b></span></button>' : "";
+  }
+
+  function plateHTML(s, side) {
+    var p = s[side];
+    return '<div class="mtg-plate mtg-plate-' + side + (s.active === side ? " mtg-active" : "") + '">' +
+      '<span class="mtg-pname">' + esc(p.name) + "</span>" +
+      '<span class="mtg-life"><span class="mtg-life-tag">LIFE</span> <span class="mtg-life-num">' + p.life + "</span>" +
+      (p.poison > 0 ? ' <span class="mtg-poison">☣ ' + p.poison + "</span>" : "") + "</span></div>";
+  }
+  function pileHTML(side, which, count, cls, preview, sel) {
+    var a = pv(preview, sel, side + "." + which);
+    return '<div class="mtg-pile ' + (count > 0 ? cls : "mtg-pile-empty") + a.cls + '"' + a.extra + '><span class="mtg-count">' + count +
+      '</span> <span class="mtg-plabel">' + PILE_LABEL[which] + "</span></div>";
+  }
+  function pilesHTML(s, side, preview, sel) {
+    var p = s[side], L = ['<div class="mtg-piles">'];
+    L.push(pileHTML(side, "library", p.library, "mtg-down", preview, sel));
+    L.push(pileHTML(side, "gy", p.gy.count, "mtg-" + p.gy.top, preview, sel));
+    L.push(pileHTML(side, "exile", p.exile, "mtg-pile-exile", preview, sel));
+    if (p.cmd) { var a = pv(preview, sel, side + ".cmd"); L.push(cardHTML(p.cmd, "cmd", a.extra, a.cls)); }
+    else L.push(addBtn(preview, side + ".cmd", "Add a commander"));
+    L.push("</div>");
+    return L.filter(Boolean).join("\n");
+  }
+  function barHTML(s, side, preview, sel) {
+    var parts = [plateHTML(s, side), pilesHTML(s, side, preview, sel)];
+    if (side === "opp") parts.reverse();
+    return '<div class="mtg-bar' + (side === "opp" ? " mtg-bar-opp" : "") + '">\n' + parts.join("\n") + "\n</div>";
+  }
+  function listHTML(list, ctx, key, preview, sel) {
+    return list.map(function (c, i) { var a = pv(preview, sel, key + "." + i); return cardHTML(c, ctx, a.extra, a.cls); });
+  }
+  function handHTML(s, side, preview, sel) {
+    var p = s[side], L = ['<div class="mtg-hand">'];
+    L = L.concat(listHTML(p.hand, "hand", side + ".hand", preview, sel));
+    L.push(addBtn(preview, side + ".hand", "Add a card to the hand"));
+    L.push('<span class="mtg-hand-label">Hand: ' + p.hand.length + "</span>", "</div>");
+    return L.filter(Boolean).join("\n");
+  }
+  function rowHTML(s, side, row, preview, sel) {
+    var list = s[side][row], L = ['<div class="mtg-row mtg-' + row + '-row">'];
+    L = L.concat(listHTML(list, "field", side + "." + row, preview, sel));
+    L.push(addBtn(preview, side + "." + row, "Add a card to the " + ROW_NAME[row]));
+    if (!list.length && !preview) L.push("&nbsp;");
+    L.push("</div>");
+    return L.filter(Boolean).join("\n");
+  }
+  function phaseOf(id) { for (var i = 0; i < PHASES.length; i++) if (PHASES[i][0] === id) return PHASES[i]; return PHASES[3]; }
+  function midHTML(s, preview, sel) {
+    var ph = phaseOf(s.phase), L = ['<div class="mtg-mid">'];
+    L.push('<span class="mtg-turn">Turn ' + s.turn + " · " + esc(s[s.active].name) + "</span>");
+    L.push('<span class="mtg-phases">' + TRACK.map(function (t) {
+      var on = t[0] === ph[2];
+      return '<span class="mtg-ph' + (on ? " mtg-ph-on" : "") + '">' + (on && LIT[ph[0]] ? LIT[ph[0]] : t[1]) + "</span>";
+    }).join(" ") + "</span>");
+    if (s.stack.length || preview) {
+      var st = ['<div class="mtg-stack">', '<span class="mtg-stack-label">Stack' + (s.stack.length > 1 ? " (top first)" : "") + "</span>"];
+      st = st.concat(listHTML(s.stack, "stack", "stack", preview, sel));
+      st.push(addBtn(preview, "stack", "Add a spell to the stack"));
+      st.push("</div>");
+      L.push(st.filter(Boolean).join("\n"));
+    }
+    L.push("</div>");
+    return L.join("\n");
+  }
+  /* Every card readers can see face-up. */
+  function eachCard(s, fn) {
+    SIDES.forEach(function (side) {
+      var p = s[side];
+      p.front.concat(p.back, p.cmd ? [p.cmd] : []).forEach(function (c) { if (!c.faceDown) fn(c); });
+      p.hand.forEach(function (c) { if (c.revealed) fn(c); });
+    });
+    s.stack.forEach(function (c) { if (!c.faceDown) fn(c); });
+  }
+  /* Every card, hidden ones too (used to make sure only one card glows). */
+  function allCards(s, fn) {
+    SIDES.forEach(function (side) { var p = s[side]; p.front.concat(p.back, p.hand, p.cmd ? [p.cmd] : []).forEach(fn); });
+    s.stack.forEach(fn);
+  }
+  function glowCard(s) { var g = null; eachCard(s, function (c) { if (c.glow && !g) g = c; }); return g; }
+  function anyPoint(s) { var h = false; eachCard(s, function (c) { if (c.show === "panel" || (c.show === "pic" && c.img)) h = true; }); return h; }
+
+  function boardHTML(s, preview, sel) {
+    var L = ['<div class="mtg-duel">', barHTML(s, "opp", preview, sel), handHTML(s, "opp", preview, sel),
+      '<div class="mtg-side mtg-opp">', rowHTML(s, "opp", "back", preview, sel), rowHTML(s, "opp", "front", preview, sel), "</div>",
+      midHTML(s, preview, sel),
+      '<div class="mtg-side mtg-me">', rowHTML(s, "me", "front", preview, sel), rowHTML(s, "me", "back", preview, sel), "</div>",
+      handHTML(s, "me", preview, sel), barHTML(s, "me", preview, sel)];
+    var g = s.showInfo && glowCard(s);
+    if (g) L.push(spotHTML(g, false));
+    if (anyPoint(s)) L.push('<span class="mtg-tip">Point at or tap a card to see it up close.</span>');
+    L.push("</div>");
+    /* No blank lines: AO3 would turn them into paragraph breaks. */
+    return L.join("\n").replace(/\n\s*\n/g, "\n");
+  }
+  function logResult(s) {
+    var p = s[s.log.who] || s.opp, d = Number(s.log.delta) || 0;
+    return { p: p, before: p.life, after: p.life + d, d: d };
+  }
+  function logHTML(s) {
+    var x = logResult(s);
+    return ['<div class="mtg-log' + (x.d > 0 ? " mtg-log-heal" : "") + '">',
+      '<span class="mtg-log-act">' + esc(s.log.text) + "</span>",
+      esc(x.p.name) + " life " + x.before + " → " + x.after + ' <span class="mtg-delta">' + (x.d < 0 ? "−" : "+") + Math.abs(x.d) + "</span>",
+      "</div>"].join("\n");
+  }
+
+  /* ---------- Reading a board back in ---------- */
+  var txt = function (el) { return el ? el.textContent.replace(/\s+/g, " ").trim() : ""; };
+  function frameOf(el) { for (var i = 0; i < FRAME_IDS.length; i++) if (el.classList.contains("mtg-" + FRAME_IDS[i])) return FRAME_IDS[i]; return null; }
+  function setPT(c, s) {
+    var m = String(s).match(/^\s*([^\/\s]*)\s*\/\s*([^\/\s]*)\s*$/);
+    if (m) { c.power = m[1] === "?" ? "" : m[1]; c.toughness = m[2] === "?" ? "" : m[2]; }
+  }
+  function fillFromSpot(c, sp) {
+    c.name = c.name || txt(sp.querySelector(".mtg-spot-name"));
+    var cost = sp.querySelector(".mtg-spot-cost"); c.cost = cost ? textWithSymbols(cost) : "";
+    if (c.produced && c.cost === c.produced) c.cost = "";
+    c.typeLine = txt(sp.querySelector(".mtg-spot-type"));
+    c.text = Array.prototype.map.call(sp.querySelectorAll(".mtg-spot-line"), textWithSymbols).join("\n");
+    c.flavor = txt(sp.querySelector(".mtg-spot-flavor"));
+    var st = txt(sp.querySelector(".mtg-spot-stats")), lm = st.match(/^(?:Loyalty|Defense)\s+(.+)$/);
+    if (lm) c.loyalty = lm[1]; else if (st && c.power === "" && c.toughness === "") setPT(c, st);
+    var im = sp.querySelector(".mtg-spot-img img"); if (im && !c.img) c.img = im.getAttribute("src") || "";
+  }
+  function parseCard(el, ctx) {
+    var c = newCard(), has = function (k) { return el.classList.contains(k); };
+    c.tapped = has("mtg-tapped");
+    c.combat = has("mtg-attacking") ? "atk" : has("mtg-blocking") ? "blk" : "";
+    c.owner = has("mtg-theirs") ? "opp" : "me";
+    var pt = el.querySelector(".mtg-pt"), loy = el.querySelector(".mtg-loy"), note = el.querySelector(".mtg-note");
+    if (pt) setPT(c, txt(pt));
+    if (loy) c.loyalty = txt(loy);
+    if (note) c.note = txt(note);
+    if (has("mtg-down")) { if (ctx !== "hand") c.faceDown = true; return c; }
+    if (ctx === "hand") c.revealed = true;
+    c.frame = frameOf(el) || "c";
+    c.glow = has("mtg-focus");
+    var face = el.querySelector(".mtg-face"), faceImg = face ? face.querySelector("img") : null;
+    c.usePic = !!faceImg;
+    c.name = txt(el.querySelector(".mtg-cname")) || (faceImg ? faceImg.getAttribute("alt") || "" : "");
+    c.typeLine = txt(face && face.querySelector(".mtg-type"));
+    var art = textWithSymbols(face && face.querySelector(".mtg-art"));
+    if (/\bLand\b/.test(c.typeLine) || c.frame === "l") c.produced = art; else c.cost = art;
+    var pop = el.querySelector(".mtg-pop img"), hv = el.querySelector(".mtg-hover");
+    c.show = hv ? "panel" : pop ? "pic" : "none";
+    c.img = faceImg ? faceImg.getAttribute("src") || "" : pop ? pop.getAttribute("src") || "" : "";
+    if (hv) fillFromSpot(c, hv);
+    if (!c.typeLine) c.typeLine = "";
+    if (c.typeLine === frameName(c.frame)) c.typeLine = "";
+    return c;
+  }
+  function cardsIn(el, ctx) { return el ? Array.prototype.map.call(el.querySelectorAll(".mtg-card"), function (x) { return parseCard(x, ctx); }) : []; }
+  function parseBoard(html) {
+    var doc = new DOMParser().parseFromString(html, "text/html");
+    var duel = doc.querySelector(".mtg-duel");
+    if (!duel || !duel.querySelector(".mtg-side")) throw new Error("not a board");
+    var s = emptyState();
+    SIDES.forEach(function (side) {
+      var p = s[side], plate = duel.querySelector(".mtg-plate-" + side);
+      if (plate) {
+        p.name = txt(plate.querySelector(".mtg-pname")) || p.name;
+        p.life = clampInt(txt(plate.querySelector(".mtg-life-num")), -999, 9999);
+        p.poison = clampInt(txt(plate.querySelector(".mtg-poison")).replace(/\D/g, ""), 0, 99);
+        if (plate.classList.contains("mtg-active")) s.active = side;
+      }
+      var bar = plate ? plate.closest(".mtg-bar") : null;
+      if (bar) {
+        forEach(bar.querySelectorAll(".mtg-pile"), function (pile) {
+          var label = txt(pile.querySelector(".mtg-plabel")).toLowerCase(), n = clampInt(txt(pile.querySelector(".mtg-count")), 0, 999);
+          if (/library/.test(label)) p.library = n;
+          else if (/grave/.test(label)) p.gy = { count: n, top: frameOf(pile) || "c" };
+          else if (/exile/.test(label)) p.exile = n;
+        });
+        var cmd = bar.querySelector(".mtg-card");
+        p.cmd = cmd ? parseCard(cmd, "cmd") : null;
+      }
+      var sideEl = duel.querySelector(".mtg-" + side);
+      p.front = cardsIn(sideEl && sideEl.querySelector(".mtg-front-row"), "field");
+      p.back = cardsIn(sideEl && sideEl.querySelector(".mtg-back-row"), "field");
+    });
+    var hands = duel.querySelectorAll(".mtg-hand");
+    s.opp.hand = cardsIn(hands[0], "hand");
+    s.me.hand = cardsIn(hands[1], "hand");
+    var mid = duel.querySelector(".mtg-mid");
+    if (mid) {
+      var tm = txt(mid.querySelector(".mtg-turn")).match(/Turn\s*(\d+)/); if (tm) s.turn = clampInt(tm[1], 1, 999);
+      var on = txt(mid.querySelector(".mtg-ph-on"));
+      PHASES.forEach(function (ph) {
+        if (LIT[ph[0]] === on) s.phase = ph[0];
+        TRACK.forEach(function (t) { if (t[1] === on && t[0] === ph[0]) s.phase = ph[0]; });
+      });
+      if (on === "Combat") s.phase = "combat";
+      if (on === "End") s.phase = "end";
+      s.stack = cardsIn(mid.querySelector(".mtg-stack"), "stack");
+    }
+    var spot = null;
+    forEach(duel.querySelectorAll(".mtg-spot"), function (el) { if (!spot && !el.classList.contains("mtg-hover")) spot = el; });
+    var g = glowCard(s);
+    s.showInfo = g ? !!spot : true;
+    if (g && spot && g.show !== "panel") fillFromSpot(g, spot);
+    return s;
+  }
+
+  /* ---------- State, saving ---------- */
+  var KEY = "mtg-duel-builder-v1";
+  var state, sel = null, lookupMsg = "", lastResults = [], printsMsg = "", lastPrints = [];
+  try { state = JSON.parse(localStorage.getItem(KEY)); } catch (e) { state = null; }
+  if (!state || state.v !== 1 || !state.opp || !state.me) state = exampleState();
+  function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) { /* storage unavailable: keep working without it */ } }
+
+  /* ---------- Rendering ---------- */
+  var preview = $("#preview"), boardOut = $("#board-out"), editor = $("#zone-editor");
+  function render() {
+    preview.innerHTML = boardHTML(state, true, sel);
+    boardOut.value = boardHTML(state, false);
+    $("#log-preview").innerHTML = logHTML(state);
+    var g = glowCard(state), note = $("#info-note");
+    if (!state.showInfo) note.textContent = "";
+    else if (g) note.textContent = "Showing " + (g.name || "the highlighted card") + ", the highlighted card.";
+    else note.textContent = "Highlight a card (in its settings) to show its details here.";
+    save();
+  }
+
+  function fillSideInputs() {
+    SIDES.forEach(function (side) {
+      var p = state[side];
+      $("#" + side + "-name").value = p.name; $("#" + side + "-life").value = p.life;
+      $("#" + side + "-poison").value = p.poison; $("#" + side + "-hand").value = p.hand.length;
+    });
+    $("#turn").value = state.turn; $("#phase").value = state.phase; $("#show-info").checked = state.showInfo;
+    $("#log-text").value = state.log.text; $("#log-delta").value = state.log.delta;
+    fillNames();
+  }
+  function fillNames() {
+    var o = '<option value="opp">' + esc(state.opp.name) + '</option><option value="me">' + esc(state.me.name) + "</option>";
+    $("#log-who").innerHTML = o; $("#log-who").value = state.log.who;
+    $("#active").innerHTML = o; $("#active").value = state.active;
+  }
+  $("#phase").innerHTML = PHASES.map(function (p) { return '<option value="' + p[0] + '">' + p[1] + "</option>"; }).join("");
+
+  /* ---------- Editor ---------- */
+  /* What's selected, as a key: "opp.front.2", "me.hand.0", "stack.1", "opp.cmd", "me.gy"… */
+  function target(k) {
+    k = k || sel;
+    if (!k) return null;
+    var p = k.split(".");
+    if (p[0] === "stack") { var sc = state.stack[+p[1]]; return sc ? { kind: "card", ctx: "stack", list: state.stack, i: +p[1], card: sc } : null; }
+    var side = state[p[0]]; if (!side) return null;
+    if (p[1] === "cmd") return side.cmd ? { kind: "card", ctx: "cmd", side: p[0], card: side.cmd } : null;
+    if (PILE_LABEL[p[1]]) return { kind: "pile", side: p[0], pile: p[1] };
+    var list = side[p[1]], c = list && list[+p[2]];
+    return c ? { kind: "card", ctx: p[1] === "hand" ? "hand" : "field", side: p[0], row: p[1], list: list, i: +p[2], card: c } : null;
+  }
+  function cur() { var t = target(); return t && t.kind === "card" ? t.card : null; }
+  function ownerName(t) { return state[t.side].name; }
+  function title(t) {
+    if (t.kind === "pile") return ownerName(t) + "’s " + PILE_LABEL[t.pile];
+    if (t.ctx === "stack") return "Stack, spell " + (t.i + 1) + " of " + state.stack.length + (t.i === 0 ? " (top)" : "");
+    if (t.ctx === "cmd") return ownerName(t) + "’s commander";
+    return ownerName(t) + "’s " + ROW_NAME[t.row] + ", card " + (t.i + 1) + " of " + t.list.length;
+  }
+
+  function opt(list, val) { return list.map(function (o) { return '<option value="' + esc(o[0]) + '"' + (String(o[0]) === String(val) ? " selected" : "") + ">" + esc(o[1]) + "</option>"; }).join(""); }
+  function check(id, f, on, label, disabled) {
+    return '<label class="check"><input type="checkbox" id="' + id + '" data-f="' + f + '" data-struct' + (on ? " checked" : "") + (disabled ? " disabled" : "") + "><span>" + label + "</span></label>";
+  }
+  function seg(name, f, items, val) {
+    return '<div class="seg" role="radiogroup">' + items.map(function (it) {
+      return '<label><input type="radio" name="' + name + '" id="' + name + "-" + (it[0] || "none") + '" value="' + it[0] + '" data-f="' + f + '" data-struct' + (it[0] === val ? " checked" : "") + "><span>" + it[1] + "</span></label>";
+    }).join("") + "</div>";
+  }
+  function text(id, f, label, val, extra) {
+    return '<div class="field' + (extra && extra.cls ? " " + extra.cls : "") + '"><label for="' + id + '">' + label + '</label><input type="text" id="' + id + '" data-f="' + f + '"' +
+      (extra && extra.ph ? ' placeholder="' + esc(extra.ph) + '"' : "") + ' value="' + esc(val) + '"></div>';
+  }
+
+  function editorHTML() {
+    var t = target();
+    if (!t) return '<p class="empty-note">Click a card, a pile, or a <b>+</b> on the board to add or change a card.</p>';
+    var h = '<p class="zone-title">' + esc(title(t)) + "</p>";
+    if (t.kind === "pile") {
+      var p = state[t.side], n = t.pile === "gy" ? p.gy.count : p[t.pile];
+      h += '<div class="field"><label for="f-count">Cards in the ' + PILE_LABEL[t.pile].toLowerCase() + '</label><input type="number" id="f-count" min="0" max="999" data-f="count" value="' + n + '"></div>';
+      if (t.pile === "gy") h += '<div class="field"><label for="f-top">Colour of the top card</label><select id="f-top" data-f="top" data-struct>' + opt(FRAMES, p.gy.top) + "</select></div>";
+      return h + '<p class="hint">At 0 the pile shows as an empty outline.</p>';
+    }
+    var c = t.card, field = t.ctx === "field";
+    h += '<div class="field"><label for="f-name">Card name</label><div class="inline"><input type="text" id="f-name" data-f="name" autocomplete="off" value="' + esc(c.name) + '">' +
+      '<button type="button" class="btn" id="lookup-btn">Look up</button></div>' +
+      '<div class="lookup-out" id="lookup-out" aria-live="polite">' + lookupMsg + "</div>" +
+      '<p class="hint">Look up fills in the card’s cost, type, text and picture. You can change any of it after.</p></div>';
+    h += '<div class="checks">' + (t.ctx === "hand"
+      ? check("f-revealed", "revealed", c.revealed, "Face-up (revealed): readers can see this card") +
+        (c.revealed ? "" : '<p class="hint">Readers only see a card back. Anything you fill in below stays hidden until you reveal it.</p>')
+      : check("f-facedown", "faceDown", c.faceDown, "Face-down: readers only see a card back (morph, manifest…)")) + "</div>";
+    h += '<div class="row2"><div class="field"><label for="f-frame">Frame colour</label><select id="f-frame" data-f="frame" data-struct>' + opt(FRAMES, c.frame) + "</select></div>" +
+      text("f-cost", "cost", "Mana cost", c.cost, { ph: "{2}{U}{U}" }) + "</div>";
+    h += text("f-type", "typeLine", "Type line", c.typeLine, { ph: "Creature — Elf Druid" });
+    h += '<div class="row3">' + text("f-power", "power", "Power", c.power) + text("f-tough", "toughness", "Toughness", c.toughness) +
+      text("f-loy", "loyalty", isBattle(c) ? "Defense" : "Loyalty", c.loyalty) + "</div>";
+    h += '<div class="field"><label for="f-text">Rules text</label><textarea id="f-text" rows="4" data-f="text">' + esc(c.text) + "</textarea>" +
+      '<p class="hint">One ability per line. Write mana symbols in braces: {T}, {2}{G}, {W/U}.</p></div>';
+    h += '<div class="field"><label for="f-flavor">Flavour text</label><textarea id="f-flavor" rows="2" data-f="flavor">' + esc(c.flavor) + "</textarea></div>";
+    h += '<div class="field"><label for="f-img">Picture link</label><div class="pic-row"><div style="display:grid;gap:4px;min-width:0">' +
+      '<input type="url" id="f-img" data-f="img" placeholder="https://cards.scryfall.io/normal/front/…" value="' + esc(c.img) + '">' +
+      '<p class="hint" id="img-status"></p></div><img id="img-thumb" alt="" hidden></div>' +
+      '<p class="hint">Look up fills this in from Scryfall. To use another picture, paste its direct link (it usually ends in .jpg or .png).</p>' +
+      (c.prints ? '<div class="btn-row"><button type="button" class="btn-ghost" id="prints-btn">Choose another printing (art)</button></div>' : "") +
+      '<div class="lookup-out" id="prints-out" aria-live="polite">' + printsMsg + "</div></div>";
+    h += '<div class="checks">' + check("f-usepic", "usePic", c.usePic, "Show the real card picture instead of the drawn card", !c.img) + "</div>";
+    h += '<div class="field"><span class="legend">When a reader points at or taps the card</span>' +
+      seg("f-show", "show", [["panel", "Show its details"], ["pic", "Show the big picture"], ["none", "Nothing"]], c.show) +
+      (c.show === "pic" && !c.img ? '<p class="hint bad">There’s no picture link yet, so nothing will show.</p>' : "") + "</div>";
+    if (field) {
+      h += '<div class="checks">' + check("f-tapped", "tapped", c.tapped, "Tapped (turned sideways)") + "</div>";
+      h += '<div class="field"><span class="legend">In combat</span>' + seg("f-combat", "combat", [["", "No"], ["atk", "Attacking"], ["blk", "Blocking"]], c.combat) + "</div>";
+    }
+    if (t.ctx !== "hand") h += text("f-note", "note", "Counters or note (a small label on the card)", c.note, { ph: "+1/+1 ×2" });
+    if (t.ctx === "stack") h += '<div class="field"><label for="f-owner">Whose spell</label><select id="f-owner" data-f="owner" data-struct>' + opt([["me", state.me.name], ["opp", state.opp.name]], c.owner) + "</select></div>";
+    h += '<div class="checks">' + check("f-glow", "glow", c.glow, "Highlight this card (golden glow; its details show under the board)") + "</div>";
+    h += moveButtons(t);
+    return h;
+  }
+  function moveButtons(t) {
+    var B = function (id, label, dis, cls) { return '<button type="button" class="btn-ghost' + (cls ? " " + cls : "") + '" id="' + id + '"' + (dis ? " disabled" : "") + ">" + label + "</button>"; };
+    var L = [];
+    if (t.list) {
+      L.push(B("mv-left", t.ctx === "stack" ? "← Higher" : "← Move left", t.i === 0), B("mv-right", t.ctx === "stack" ? "Lower →" : "Move right →", t.i === t.list.length - 1));
+    }
+    if (t.ctx === "field") L.push(B("mv-row", t.row === "front" ? "Move to the back row" : "Move to the front row"));
+    if (t.ctx === "hand") L.push(B("mv-play", "Put onto the battlefield"));
+    if (t.ctx !== "cmd") L.push(B("mv-gy", "To the graveyard"), B("mv-exile", "Exile it"));
+    L.push(B("mv-remove", t.ctx === "cmd" ? "Remove the commander" : "Remove", false, "danger"));
+    return '<div class="btn-row">' + L.join("") + "</div>";
+  }
+
+  function renderEditor() {
+    var focusId = document.activeElement && editor.contains(document.activeElement) ? document.activeElement.id : null;
+    editor.innerHTML = editorHTML();
+    if (focusId && document.getElementById(focusId)) document.getElementById(focusId).focus();
+    checkPicture();
+  }
+
+  function setField(el) {
+    var f = el.dataset.f, t = target();
+    if (!t) return;
+    if (t.kind === "pile") {
+      var p = state[t.side];
+      if (f === "count") { var n = clampInt(el.value, 0, 999); if (t.pile === "gy") p.gy.count = n; else p[t.pile] = n; }
+      if (f === "top") p.gy.top = el.value;
+      return;
+    }
+    var c = t.card, v = el.type === "checkbox" ? el.checked : el.value;
+    if (f === "glow" && v) allCards(state, function (o) { o.glow = false; });
+    c[f] = v;
+    if (f === "img") { var box = $("#f-usepic"); if (box) box.disabled = !String(v).trim(); }
+  }
+
+  editor.addEventListener("input", function (e) {
+    var el = e.target; if (!el.dataset.f || el.type === "radio" || el.type === "checkbox" || el.tagName === "SELECT") return;
+    setField(el); render();
+    if (el.dataset.f === "img") { clearTimeout(checkPicture.t); checkPicture.t = setTimeout(checkPicture, 450); }
+    if (el.dataset.f === "typeLine") { var lab = $('label[for="f-loy"]'); if (lab && cur()) lab.textContent = isBattle(cur()) ? "Defense" : "Loyalty"; }
+  });
+  editor.addEventListener("change", function (e) {
+    var el = e.target; if (!el.dataset.f) return;
+    if (el.type === "radio" || el.type === "checkbox" || el.tagName === "SELECT") {
+      setField(el); render();
+      if (el.hasAttribute("data-struct")) renderEditor();
+    }
+  });
+  editor.addEventListener("click", function (e) {
+    var id = e.target.closest("button") ? e.target.closest("button").id : "";
+    if (id === "lookup-btn") { doLookup(); return; }
+    if (id === "prints-btn") { loadPrints(); return; }
+    if (/^mv-/.test(id)) { move(id); return; }
+    var res = e.target.closest(".result");
+    if (res) { applyResult(lastResults[+res.dataset.i]); return; }
+    var pr = e.target.closest(".print");
+    if (pr) { pickPrint(lastPrints[+pr.dataset.i]); }
+  });
+  editor.addEventListener("keydown", function (e) { if (e.key === "Enter" && e.target.id === "f-name") { e.preventDefault(); doLookup(); } });
+
+  /* Moving cards between places on the board. */
+  function playRow(c) { return /\b(Land|Artifact|Enchantment)\b/.test(c.typeLine) && !/\b(Creature|Planeswalker|Battle)\b/.test(c.typeLine) ? "back" : "front"; }
+  function move(id) {
+    var t = target(); if (!t || t.kind !== "card") return;
+    var c = t.card, owner = t.ctx === "stack" ? c.owner : t.side, newSel = null;
+    var take = function () { if (t.list) t.list.splice(t.i, 1); else state[t.side].cmd = null; };
+    if (id === "mv-left" || id === "mv-right") {
+      var j = t.i + (id === "mv-left" ? -1 : 1);
+      if (j < 0 || j >= t.list.length) return;
+      t.list[t.i] = t.list[j]; t.list[j] = c;
+      newSel = sel.replace(/\.\d+$/, "." + j);
+    } else if (id === "mv-row") {
+      var to = t.row === "front" ? "back" : "front";
+      take(); state[t.side][to].push(c); newSel = t.side + "." + to + "." + (state[t.side][to].length - 1);
+    } else if (id === "mv-play") {
+      var row = playRow(c);
+      take(); c.revealed = false; c.faceDown = false; state[t.side][row].push(c);
+      newSel = t.side + "." + row + "." + (state[t.side][row].length - 1);
+    } else if (id === "mv-gy") {
+      take(); state[owner].gy.count++; if (!c.faceDown) state[owner].gy.top = c.frame;
+    } else if (id === "mv-exile") {
+      take(); state[owner].exile++;
+    } else if (id === "mv-remove") {
+      take();
+    }
+    sel = newSel; lookupMsg = ""; printsMsg = "";
+    fillSideInputs(); render(); renderEditor();
+    var again = $("#" + id); if (again && !again.disabled) again.focus();
+  }
+
+  /* ---------- Picture link checks ---------- */
+  function linkHint(url) {
+    if (/example\.com/i.test(url)) return "This is a placeholder link. Replace it with your own picture link.";
+    if (/^https?:\/\/(www\.)?scryfall\.com\//i.test(url)) return "This is a Scryfall page, not the picture. Use Look up, or on Scryfall right-click the card picture, choose “Copy image address”, and paste that.";
+    if (/^https?:\/\/(www\.|m\.)?imgur\.com\//i.test(url)) return "This is an Imgur page, not the picture. On Imgur, right-click the picture, choose “Copy image address”, and paste that (it starts with i.imgur.com).";
+    if (/drive\.google\.com|dropbox\.com|onedrive|1drv\.ms/i.test(url)) return "Cloud drive links don’t show on AO3. Upload the picture to an image host instead.";
+    if (/discord(app)?\.(com|net)/i.test(url)) return "Discord links stop working after a while. Upload the picture to an image host instead.";
+    if (/^http:\/\//i.test(url)) return "Use a link that starts with https://, or some readers’ browsers will block it.";
+    if (url && !/^https:\/\//i.test(url)) return "A picture link should start with https://";
+    return "";
+  }
+  function checkPicture() {
+    var c = cur(), st = $("#img-status"), th = $("#img-thumb");
+    if (!c || !st) return;
+    var url = String(c.img || "").trim(), hint = linkHint(url);
+    th.hidden = true;
+    if (!url) { st.className = "hint"; st.textContent = ""; return; }
+    st.className = "hint"; st.textContent = "Checking the link…";
+    var probe = new Image();
+    probe.onload = function () {
+      if (cur() !== c || String(c.img).trim() !== url) return;
+      st.className = hint ? "hint bad" : "hint ok";
+      st.textContent = "✓ Picture found (" + probe.naturalWidth + " × " + probe.naturalHeight + ")." + (hint ? " " + hint : "");
+      th.src = url; th.hidden = false;
+    };
+    probe.onerror = function () {
+      setTimeout(function () {
+        if (cur() !== c || String(c.img).trim() !== url) return;
+        st.className = "hint bad";
+        st.textContent = blocked.img
+          ? "Can’t check pictures here. " + BLOCKED_TIP + (hint ? " " + hint : "")
+          : "✗ This link doesn’t open a picture. " + (hint || "Use a direct link: open the picture on its own, then copy that address. It usually ends in .jpg or .png.");
+      }, 150);
+    };
+    probe.src = url;
+  }
+
+  /* ---------- Blocked windows ----------
+     Some places that display HTML files (an app's file preview, a sandboxed page) forbid
+     connections to other websites. The browser reports each refusal, so we can tell that
+     apart from being offline and say what to do. */
+  var blocked = { connect: false, img: false };
+  document.addEventListener("securitypolicyviolation", function (e) {
+    var d = e.effectiveDirective || e.violatedDirective || "";
+    if (/connect|default/.test(d)) blocked.connect = true;
+    if (/img|default/.test(d)) blocked.img = true;
+  });
+  var BLOCKED_TIP = "This window blocks other websites. Open the builder in a web browser such as Firefox or Chrome (double-click index.html, or drag it into a browser window).";
+  function netError(what) {
+    return blocked.connect ? what + " can’t reach Scryfall from here. " + BLOCKED_TIP
+      : navigator.onLine === false ? "You seem to be offline. Reconnect and try again, or fill in the details yourself."
+      : "Couldn’t reach Scryfall. Try again in a moment, or fill in the details yourself. If it keeps failing, a browser extension (like an ad blocker) may be blocking api.scryfall.com.";
+  }
+
+  /* ---------- Card lookup (Scryfall) ----------
+     Scryfall's free API gives every Magic card's details and a direct link to its picture
+     on cards.scryfall.io, which AO3 can show as is. Its rules: search at most twice a second,
+     and never crop, stretch or recolour the card pictures. */
+  var SF_SEARCH = "https://api.scryfall.com/cards/search?unique=cards&order=name&q=";
+  function getJSON(url) {
+    return fetch(url, { headers: { Accept: "application/json" } }).then(function (r) {
+      return r.json().catch(function () { return {}; }).then(function (j) { return { status: r.status, ok: r.ok, j: j }; });
+    });
+  }
+  function setOut(id, msg) { var o = $(id); if (o) o.innerHTML = msg; }
+  function busy(id, on) { var b = $(id); if (b) b.disabled = on; }
+  function doLookup() {
+    var q = ($("#f-name").value || "").trim();
+    if (q.length < 2) { lookupMsg = '<p class="hint bad">Type at least 2 letters of the card’s name first.</p>'; setOut("#lookup-out", lookupMsg); return; }
+    setOut("#lookup-out", '<p class="hint">Searching…</p>'); busy("#lookup-btn", true);
+    getJSON(SF_SEARCH + encodeURIComponent(q))
+      .then(function (res) {
+        var data = res.ok && res.j && res.j.data || [];
+        if (res.status === 429) lookupMsg = '<p class="hint bad">Too many look-ups in a row. Wait a few seconds, then try again.</p>';
+        else if (!data.length) lookupMsg = '<p class="hint bad">No card found matching “' + esc(q) + '”. Check the spelling, or fill in the details yourself.</p>';
+        else {
+          var lower = q.toLowerCase();
+          data.sort(function (a, b) { return (b.name.toLowerCase() === lower) - (a.name.toLowerCase() === lower); });
+          lastResults = data.slice(0, 15);
+          lookupMsg = '<p class="hint">Pick the card' + (data.length > 15 ? " (first 15 of " + res.j.total_cards + "; type more of the name to narrow it down)" : "") + ':</p><div class="results">' +
+            lastResults.map(function (d, i) { return '<button type="button" class="result" data-i="' + i + '"><b>' + esc(d.name) + "</b><span>" + esc(d.type_line || "") + "</span></button>"; }).join("") + "</div>";
+        }
+        setOut("#lookup-out", lookupMsg); busy("#lookup-btn", false);
+      })
+      .catch(function () {
+        /* the refusal report can arrive just after the failed request, so look a moment later */
+        setTimeout(function () {
+          lookupMsg = '<p class="hint bad">' + netError("Look up") + "</p>";
+          setOut("#lookup-out", lookupMsg); busy("#lookup-btn", false);
+        }, 150);
+      });
+  }
+  function frameFor(typeLine, colors) {
+    if (/\bLand\b/.test(typeLine) && !/\bCreature\b/.test(typeLine)) return "l";
+    colors = colors || [];
+    if (colors.length > 1) return "m";
+    if (colors.length === 1) return colors[0].toLowerCase();
+    return "c";
+  }
+  function imageOf(d, size) {
+    var u = d.image_uris || (d.card_faces && d.card_faces[0] && d.card_faces[0].image_uris);
+    return u ? u[size] || u.normal || "" : "";
+  }
+  function applyResult(d) {
+    var c = cur(); if (!c || !d) return;
+    var faces = d.card_faces || [], f0 = faces[0] || {};
+    /* Two-sided cards (one picture per side): use the front side. Split and adventure
+       cards (one picture, two halves): keep both halves' text. */
+    var twoSided = !d.image_uris && faces.length > 1;
+    var front = twoSided ? f0 : d;
+    c.name = twoSided ? f0.name : d.name;
+    c.cost = front.mana_cost != null ? front.mana_cost : d.mana_cost || "";
+    c.typeLine = front.type_line || d.type_line || "";
+    if (d.oracle_text != null && !twoSided) c.text = d.oracle_text;
+    else if (twoSided) c.text = f0.oracle_text || "";
+    else c.text = faces.map(function (f) { return f.name + (f.mana_cost ? " " + f.mana_cost : "") + ": " + (f.oracle_text || ""); }).join("\n");
+    c.flavor = front.flavor_text || d.flavor_text || "";
+    c.power = front.power != null ? String(front.power) : "";
+    c.toughness = front.toughness != null ? String(front.toughness) : "";
+    c.loyalty = front.loyalty != null ? String(front.loyalty) : front.defense != null ? String(front.defense) : "";
+    c.produced = (d.produced_mana || []).map(function (m) { return "{" + m + "}"; }).join("");
+    c.frame = frameFor(c.typeLine, front.colors || d.colors);
+    c.img = imageOf(d, "normal");
+    c.prints = d.prints_search_uri || "";
+    if (c.img) c.usePic = true;
+    lookupMsg = '<p class="hint ok">✓ Filled in ' + esc(c.name) + (c.img ? ", with its picture from Scryfall (" + esc(d.set_name || "") + ")." : ". Scryfall has no picture of this card yet, so paste your own link below if you want one.") +
+      (twoSided ? " It has two sides; this is the front." : "") + "</p>";
+    printsMsg = ""; lastPrints = [];
+    render(); renderEditor();
+  }
+
+  /* Other printings of the same card, for writers who want particular art. */
+  function loadPrints() {
+    var c = cur(); if (!c || !c.prints) return;
+    var url = c.prints.replace(/order=[a-z]+/, "order=released") + (/[?&]dir=/.test(c.prints) ? "" : "&dir=desc");
+    setOut("#prints-out", '<p class="hint">Getting the printings…</p>'); busy("#prints-btn", true);
+    getJSON(url).then(function (res) {
+      lastPrints = (res.ok && res.j && res.j.data || []).filter(function (d) { return imageOf(d, "small"); });
+      printsMsg = printsHTML(c, res.j && res.j.has_more);
+      setOut("#prints-out", printsMsg); busy("#prints-btn", false);
+    }).catch(function () {
+      setTimeout(function () { printsMsg = '<p class="hint bad">' + netError("The printings list") + "</p>"; setOut("#prints-out", printsMsg); busy("#prints-btn", false); }, 150);
+    });
+  }
+  function printsHTML(c, more) {
+    if (!lastPrints.length) return '<p class="hint bad">Scryfall has no other pictures of this card.</p>';
+    return '<p class="hint">' + lastPrints.length + (more ? "+" : "") + ' printings, newest first. Pick one:</p><div class="prints">' + lastPrints.map(function (d, i) {
+      return '<button type="button" class="print' + (imageOf(d, "normal") === c.img ? " is-cur" : "") + '" data-i="' + i + '" title="' + esc(d.set_name) + '"><img src="' + esc(imageOf(d, "small")) +
+        '" alt="" loading="lazy" width="76"><span>' + esc(d.set.toUpperCase()) + " · " + esc(String(d.released_at || "").slice(0, 4)) + "</span></button>";
+    }).join("") + "</div>";
+  }
+  function pickPrint(d) {
+    var c = cur(); if (!c || !d) return;
+    c.img = imageOf(d, "normal"); c.usePic = true;
+    /* Flavour text can differ between printings. */
+    var face = d.card_faces && !d.image_uris ? d.card_faces[0] : d;
+    c.flavor = face.flavor_text || "";
+    var keep = $(".prints") ? $(".prints").scrollTop : 0;
+    printsMsg = printsHTML(c, /\+ printings/.test(printsMsg));
+    render(); renderEditor();
+    if ($(".prints")) $(".prints").scrollTop = keep;
+  }
+
+  /* ---------- Side panels ---------- */
+  forEach(document.querySelectorAll("[data-p]"), function (el) {
+    el.addEventListener(el.type === "checkbox" || el.tagName === "SELECT" ? "change" : "input", function () {
+      var path = el.dataset.p.split("."), v = el.type === "checkbox" ? el.checked : el.value;
+      if (/life$/.test(el.id)) v = clampInt(v, -999, 9999);
+      if (/poison$/.test(el.id)) v = clampInt(v, 0, 99);
+      if (el.id === "turn") v = clampInt(v, 1, 999);
+      if (/hand$/.test(el.id)) {
+        /* Changing the hand size adds hidden cards at the end, or removes cards from the end. */
+        var cards = state[path[0]].hand, n = clampInt(v, 0, 20);
+        while (cards.length < n) cards.push(newCard());
+        cards.length = n;
+        if (sel && !target()) { sel = null; renderEditor(); }
+      } else if (path.length === 2) state[path[0]][path[1]] = v; else state[path[0]] = v;
+      render();
+      if (/name$/.test(el.id)) { fillNames(); if (sel) renderEditor(); }
+    });
+  });
+  forEach(document.querySelectorAll("[data-l]"), function (el) {
+    el.addEventListener(el.tagName === "SELECT" ? "change" : "input", function () {
+      state.log[el.dataset.l] = el.dataset.l === "delta" ? (parseInt(el.value, 10) || 0) : el.value;
+      render();
+    });
+  });
+  $("#apply-log").addEventListener("click", function () {
+    var x = logResult(state); x.p.life = x.after; fillSideInputs(); render(); flash($("#log-status"), "Life updated on the board.");
+  });
+  $("#show-pops").addEventListener("change", function (e) { $("#workskin").classList.toggle("no-pops", !e.target.checked); });
+
+  /* A clicked card, pile or + opens in the editor. */
+  preview.addEventListener("click", function (e) {
+    var add = e.target.closest("[data-add]");
+    if (add) { addCard(add.dataset.add); return; }
+    var k = e.target.closest("[data-k]"); if (k) pick(k.dataset.k);
+  });
+  preview.addEventListener("keydown", function (e) {
+    var k = e.target.closest && e.target.closest("[data-k]");
+    if (k && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); pick(k.dataset.k); }
+  });
+  function addCard(where) {
+    var p = where.split("."), c = newCard();
+    if (p[0] === "stack") { state.stack.unshift(c); c.owner = state.active; sel = "stack.0"; }
+    else if (p[1] === "cmd") { c.frame = "m"; state[p[0]].cmd = c; sel = where; }
+    else {
+      var list = state[p[0]][p[1]];
+      if (p[1] === "hand") c.revealed = false;
+      if (p[1] === "back") c.frame = "l";
+      list.push(c); sel = where + "." + (list.length - 1);
+    }
+    lookupMsg = ""; printsMsg = "";
+    fillSideInputs(); render(); renderEditor();
+    if (p[1] !== "hand") { var nm = $("#f-name"); if (nm) nm.focus({ preventScroll: true }); }
+    scrollToEditor();
+  }
+  function pick(k) {
+    sel = k; lookupMsg = ""; printsMsg = "";
+    render(); renderEditor();
+    var again = preview.querySelector('[data-k="' + k + '"]');
+    if (again) again.focus({ preventScroll: true });
+    scrollToEditor();
+  }
+  function scrollToEditor() { if (window.matchMedia("(max-width: 900px)").matches) $("#zone-panel").scrollIntoView({ behavior: "smooth", block: "start" }); }
+
+  /* ---------- Copy, load, clear ---------- */
+  function flash(el, msg) { el.textContent = msg; clearTimeout(el._t); el._t = setTimeout(function () { el.textContent = ""; }, 2600); }
+  function copy(text, ta, status) {
+    var fallback = function () {
+      if (ta) { ta.focus(); ta.select(); }
+      var ok = false; try { ok = document.execCommand("copy"); } catch (e) { ok = false; }
+      flash(status, ok ? "Copied." : "Selected: press Ctrl+C (or ⌘C) to copy.");
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(function () { flash(status, "Copied."); }, fallback);
+    else fallback();
+  }
+  var RAW_SKIN = $("#skin-css").textContent.trim() + "\n";
+  $("#skin-out").value = RAW_SKIN;
+  $("#copy-skin").addEventListener("click", function () {
+    var d = $("#skin-out").closest("details"); copy(RAW_SKIN, d.open ? $("#skin-out") : null, $("#skin-status"));
+  });
+  $("#copy-board").addEventListener("click", function () { copy(boardOut.value, boardOut, $("#board-status")); });
+  $("#copy-log").addEventListener("click", function () { copy(logHTML(state), null, $("#log-status")); });
+
+  $("#load-btn").addEventListener("click", function () {
+    var st = $("#load-status");
+    try {
+      state = parseBoard($("#load-in").value);
+      sel = null; lookupMsg = ""; printsMsg = ""; fillSideInputs(); render(); renderEditor();
+      st.className = "hint ok"; st.textContent = "Loaded. Cards without a details panel keep their name, picture and stats, but not their rules text.";
+    } catch (e) {
+      st.className = "hint bad"; st.textContent = "That doesn’t look like a board from this builder. Paste the whole board code, from the first <div class=\"mtg-duel\"> to the end.";
+    }
+  });
+  $("#example-btn").addEventListener("click", function () { state = exampleState(); sel = null; lookupMsg = ""; printsMsg = ""; fillSideInputs(); render(); renderEditor(); });
+  var clearBtn = $("#clear-btn");
+  clearBtn.addEventListener("click", function () {
+    if (clearBtn.dataset.armed) {
+      delete clearBtn.dataset.armed; clearBtn.textContent = "Clear the board";
+      state = emptyState(); sel = null; lookupMsg = ""; printsMsg = ""; fillSideInputs(); render(); renderEditor();
+      return;
+    }
+    clearBtn.dataset.armed = "1"; clearBtn.textContent = "Click again to clear";
+    setTimeout(function () { if (clearBtn.dataset.armed) { delete clearBtn.dataset.armed; clearBtn.textContent = "Clear the board"; } }, 3500);
+  });
+
+  /* ---------- Preview uses the real Work Skin, scoped like AO3 does ---------- */
+  var scoped = RAW_SKIN.replace(/\/\*[\s\S]*?\*\//g, "").replace(/([^{}]+)\{/g, function (m, sels) {
+    return sels.split(",").map(function (x) { return "#workskin " + x.trim(); }).join(", ") + " {";
+  });
+  var style = document.createElement("style"); style.textContent = scoped; document.head.appendChild(style);
+  /* the life line preview sits outside the board, so give it the same scope */
+  var logStyle = document.createElement("style");
+  logStyle.textContent = scoped.replace(/#workskin /g, "#workskin-log ");
+  document.head.appendChild(logStyle);
+
+  /* For testing: lets a check script build and re-read boards. */
+  window.__mtg = { boardHTML: boardHTML, parseBoard: parseBoard, exampleState: exampleState, get state() { return state; } };
+
+  fillSideInputs(); render(); renderEditor();
+})();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,712 @@
+/* =====================================================================
+   MAGIC: THE GATHERING DUEL BOARD — AO3 Work Skin
+
+   HOW TO INSTALL
+   AO3 Dashboard → Skins → My Work Skins → Create Work Skin, paste this
+   whole file, save. Then on your work's Edit page pick it under
+   "Select Work Skin". AO3 quietly adds "#workskin" in front of every
+   rule, so these styles only ever touch your own story.
+
+   HOW TO READ THIS FILE (a 30-second CSS primer)
+   - Anything between slash-star and star-slash, like this text, is a
+     comment. The browser ignores it; it's only here for you.
+   - A rule looks like:   .mtg-card { color: red; }
+       .mtg-card   = "every element whose class is mtg-card"
+                     (in the HTML that's  class="mtg-card")
+       { ... }     = the list of looks to give those elements
+       color: red; = one look: a "property" and its "value"
+   - ".mtg-tapped .mtg-face" (two names with a space) means "a mtg-face
+     that sits INSIDE a mtg-tapped". ".mtg-pile.mtg-down" (no space)
+     means "one element that has BOTH classes".
+   - Every class here starts with "mtg-" so it can't clash with AO3's
+     own class names.
+
+   UNITS YOU'LL SEE
+   - em  = relative to the current text size. 1em = one letter-height.
+           Because the whole board is sized in em, it grows and shrinks
+           with the reader's chosen font size.
+   - %   = a share of the space available (50% = half as wide).
+   - px  = a fixed screen pixel. Used only for thin lines.
+
+   COLOURS
+   - #ffd84a is a hex colour (red-green-blue). rgba(0, 0, 0, 0.5) is
+     red, green, blue, then opacity: 0 = invisible, 1 = solid.
+   - Many rules set "background" twice: first a plain colour, then a
+     gradient. Browsers use the last one they understand, so the plain
+     colour is a safety net if a gradient ever isn't supported.
+
+   WHAT AO3 DOESN'T ALLOW, AND SO ISN'T USED HERE
+   - "@media" rules: AO3's cleaner rebuilds work skins without their
+     screen-size conditions, so a rule meant only for phones would
+     apply everywhere. Everything here works at every screen size.
+   - "position: fixed" (pinning something to the reader's screen):
+     AO3 refuses to save a work skin that uses it.
+   ===================================================================== */
+
+
+/* =====================================================================
+   1. THE BOARD FRAME
+   The dark playmat that holds everything. In the HTML it's the
+   outermost <div class="mtg-duel">.
+   ===================================================================== */
+.mtg-duel {
+  margin: 1.5em auto;               /* space above/below; "auto" centres it */
+  max-width: 46em;                  /* never wider than this on big screens */
+  padding: 0.5em;                   /* gap between the edge and the contents */
+  background: #222a3a;              /* plain slate (safety net) */
+  background: radial-gradient(ellipse, #3a4766, #1a1f2c 80%);  /* lighter in the middle, darker at the edges */
+  border: 3px solid #0e121a;
+  border-radius: 0.6em;
+  color: #fff;                      /* default text colour: white */
+  font-family: "Trebuchet MS", "Segoe UI", Verdana, Arial, sans-serif;  /* first font the reader has wins */
+  line-height: 1.2;                 /* tighter line spacing than story text */
+  text-align: left;
+  position: relative;               /* card details (section 12) are placed against this box */
+}
+
+/* AO3 sometimes slips extra line breaks (<br>) and paragraphs (<p>) into
+   pasted HTML. These rules make them invisible and spaceless inside the
+   board, the card panel and the log box, so they can't break the layout. */
+.mtg-duel br, .mtg-spot br, .mtg-log br { display: none; }
+.mtg-duel p, .mtg-spot p, .mtg-log p { margin: 0; padding: 0; }
+/* Where cards sit side by side, a paragraph AO3 adds must not start a new line. */
+.mtg-row p, .mtg-hand p, .mtg-bar p, .mtg-piles p, .mtg-mid p, .mtg-stack p { display: inline; }
+
+
+/* =====================================================================
+   2. PLAYER PLATES (name, life, poison)
+   The opponent's plate sits top-right, the hero's bottom-left.
+   ===================================================================== */
+
+/* The strip each plate sits in (with the player's piles beside it). */
+.mtg-bar { margin: 0.2em 0 0.4em; text-align: left; }
+/* Add mtg-bar-opp to push everything to the right (opponent's side). */
+.mtg-bar-opp { text-align: right; }
+
+/* The dark box itself. */
+.mtg-plate {
+  display: inline-block;            /* only as wide as it needs, so it can sit left or right */
+  min-width: 9em;
+  margin: 0.15em 0;
+  padding: 0.3em 0.6em 0.4em;       /* top, sides, bottom */
+  vertical-align: middle;
+  text-align: left;
+  border-radius: 0.4em;
+  box-shadow: 0 0.15em 0.3em rgba(0, 0, 0, 0.45);
+}
+/* Colour themes: red-bordered for the opponent, blue for the hero. */
+.mtg-plate-opp { background: #3d1c1c; border: 2px solid #d9534f; }
+.mtg-plate-me { background: #172a52; border: 2px solid #4f86e8; }
+/* Add mtg-active to the plate of the player whose turn it is: a gold ring. */
+.mtg-plate.mtg-active { box-shadow: 0 0 0 0.15em #ffd84a, 0 0 0.8em 0.15em rgba(255, 212, 0, 0.5); }
+
+/* Player's name. */
+.mtg-pname {
+  display: block;
+  margin-bottom: 0.1em;
+  font-weight: bold;
+  font-size: 1.05em;
+  text-shadow: 1px 1px 0 #000;
+}
+
+/* The line holding the "LIFE" tag, the number and the poison counter. */
+.mtg-life { display: block; white-space: nowrap; }
+
+/* The little "LIFE" tag. */
+.mtg-life-tag {
+  display: inline-block;
+  margin-right: 0.4em;
+  padding: 0 0.3em;
+  background: #b8322a;
+  color: #ffe9e0;
+  font-weight: bold;
+  font-size: 0.75em;
+  letter-spacing: 0.05em;
+  border-radius: 0.2em;
+  vertical-align: middle;
+}
+
+/* The big life total. Four text-shadows draw an outline; the fifth a drop shadow. */
+.mtg-life-num {
+  font-size: 1.7em;
+  font-weight: bold;
+  color: #ffd84a;
+  text-shadow: 1px 1px 0 #6b3a00, -1px -1px 0 #6b3a00, 1px -1px 0 #6b3a00, -1px 1px 0 #6b3a00, 0 2px 2px #000;
+  vertical-align: middle;
+}
+
+/* Poison counters: a green pill after the life total, e.g. "☣ 3". */
+.mtg-poison {
+  display: inline-block;
+  margin-left: 0.5em;
+  padding: 0 0.45em;
+  background: #2b4f1c;
+  border: 1px solid #8fd16a;
+  border-radius: 1em;
+  color: #d8ffc4;
+  font-size: 0.8em;
+  font-weight: bold;
+  vertical-align: middle;
+}
+
+
+/* =====================================================================
+   3. PILES (Library, Graveyard, Exile) AND THE COMMAND ZONE
+   A small group of card-sized piles beside each plate.
+   ===================================================================== */
+.mtg-piles {
+  display: inline-block;
+  margin: 0.15em 0.4em;
+  vertical-align: middle;
+  font-size: 0.7em;                 /* everything in here is drawn at 70% size */
+  text-align: center;
+  white-space: nowrap;              /* keep the piles in one row */
+}
+
+/* One pile. Two offset shadows behind it make it look like a stack. */
+.mtg-pile {
+  display: inline-block;
+  width: 4.4em;
+  height: 6.15em;
+  margin: 0 0.2em;
+  vertical-align: middle;
+  overflow: hidden;
+  border: 1px solid #111;
+  border-radius: 0.3em;
+  background: #555;
+  text-align: center;
+  white-space: normal;
+  box-shadow: 0.1em 0.12em 0 #0c0c0c, 0.2em 0.24em 0 #050505, 0 0.3em 0.5em rgba(0, 0, 0, 0.5);
+}
+/* An empty pile: just a dashed outline. */
+.mtg-pile-empty { background: rgba(255, 255, 255, 0.07); border: 1px dashed rgba(255, 255, 255, 0.45); box-shadow: none; }
+/* The Exile pile is purple-black, so it never looks like the Graveyard. */
+.mtg-pile-exile { background: #3a2650; background: radial-gradient(circle, #6e4b94, #1f1230); }
+
+/* The big number on a pile, with a black outline so it shows on any colour. */
+.mtg-count {
+  display: block;
+  margin-top: 0.75em;
+  font-size: 1.9em;
+  line-height: 1;
+  font-weight: bold;
+  color: #fff;
+  text-shadow: 2px 2px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000;
+}
+/* The small "LIBRARY" / "GRAVEYARD" / "EXILE" label under it. */
+.mtg-plabel {
+  display: block;
+  margin-top: 0.35em;
+  font-size: 0.62em;
+  font-weight: bold;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: #fff;
+  text-shadow: 1px 1px 0 #000;
+}
+
+
+/* =====================================================================
+   4. THE BATTLEFIELD
+   Each player has a side (mtg-side) holding two rows of cards:
+     mtg-front-row  creatures, planeswalkers, battles (nearest the middle)
+     mtg-back-row   lands, artifacts, enchantments (nearest the player)
+   Rows fill left to right and wrap onto a new line when they run out
+   of room, so the board fits phones without scrolling sideways.
+   ===================================================================== */
+.mtg-side {
+  padding: 0.15em 0.3em;
+  border-radius: 0.4em;
+  font-size: 0.7em;                 /* cards are sized relative to this */
+}
+/* Side tints: red for the opponent, blue for the hero. */
+.mtg-opp { background: rgba(224, 106, 99, 0.1); border: 1px solid rgba(224, 106, 99, 0.45); }
+.mtg-me { background: rgba(90, 143, 238, 0.1); border: 1px solid rgba(90, 143, 238, 0.45); }
+
+.mtg-row {
+  min-height: 3em;                  /* an empty row still shows as a thin strip */
+  padding: 0.3em 0;
+  text-align: center;               /* cards gather in the middle */
+}
+/* A faint dashed line between the two rows of one side. */
+.mtg-row + .mtg-row { border-top: 1px dashed rgba(255, 255, 255, 0.18); }
+
+
+/* =====================================================================
+   5. CARDS
+   Every card has these parts, in this order:
+     <div class="mtg-card ...">     the space the card takes up on the
+                                    board, and the thing readers point at
+       <span class="mtg-badges">    small labels over the card (section 8),
+                                    only if it has any
+       <span class="mtg-face">      what the card looks like
+       a details panel or pop-up    (section 12), only if it has one
+     </div>
+   The face is either a real card picture (<img> inside it, plus
+   mtg-pic on the card) or a drawn card made of three strips:
+     mtg-cname  name     mtg-art  picture box with the mana cost
+     mtg-type   type line
+   The frame colour is a class on the card (section 6).
+   ===================================================================== */
+.mtg-card {
+  display: inline-block;            /* sit side by side in a row */
+  width: 6.3em;                    /* real card proportions: 63 × 88 mm */
+  height: 8.8em;
+  margin: 0.25em 0.2em;
+  vertical-align: middle;
+  text-align: left;
+  cursor: pointer;                  /* tells iPhones the card can be tapped */
+}
+
+.mtg-face {
+  display: block;
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;           /* the frame padding stays inside the card's size */
+  padding: 0.25em;                  /* the coloured frame around the strips */
+  overflow: hidden;
+  background: #999;
+  border: 1px solid #111;
+  border-radius: 0.3em;
+  color: #161616;
+  box-shadow: 0 0.15em 0.3em rgba(0, 0, 0, 0.55);
+}
+/* While the pointer is over a card, a thin yellow outline marks it. */
+.mtg-card:hover .mtg-face { outline: 2px solid #fff36b; }
+
+/* Name strip. Fits two lines; a longer name is cut off. */
+.mtg-cname {
+  display: block;
+  height: 2.2em;
+  overflow: hidden;
+  padding: 0.1em 0.2em;
+  background: rgba(255, 255, 255, 0.7);
+  border-radius: 0.15em;
+  font-size: 0.75em;
+  line-height: 1.1;
+  font-weight: bold;
+}
+
+/* Picture box. Shows the mana cost (or, for a land, the mana it makes).
+   Its colour comes from the frame class (section 6). */
+.mtg-art {
+  display: block;
+  height: 3.4em;
+  margin: 0.15em 0;
+  overflow: hidden;
+  background: #555;
+  border: 1px solid rgba(0, 0, 0, 0.6);
+  line-height: 3.4em;               /* as tall as the box = the symbols sit in the middle */
+  text-align: center;
+  white-space: nowrap;
+}
+
+/* Type line ("Creature — Elf Druid"). One line; a long one ends in "…". */
+.mtg-type {
+  display: block;
+  padding: 0.15em 0.25em;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.7);
+  border-radius: 0.15em;
+  font-size: 0.6em;
+  font-weight: bold;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* A REAL CARD PICTURE as the face: no frame, the picture fills the card.
+   "height: auto" keeps the picture's own shape (Scryfall asks that card
+   pictures are never stretched or squashed). */
+.mtg-pic .mtg-face { padding: 0; background: #111; }
+.mtg-face img { display: block; width: 100%; height: auto; }
+
+
+/* =====================================================================
+   6. FRAME COLOURS
+   One class per colour, on the card (or on a Graveyard pile, to show the
+   colour of its top card):
+     mtg-w white   mtg-u blue   mtg-b black   mtg-r red   mtg-g green
+     mtg-m multicoloured (gold)   mtg-c colourless   mtg-l land
+   Each sets the frame (a top-to-bottom gradient) and the picture box
+   (a glow: bright in the centre, dark at the edges).
+   ===================================================================== */
+.mtg-w .mtg-face, .mtg-pile.mtg-w { background: #ddd5b4; background: linear-gradient(#f4efd9, #c8bd92); }
+.mtg-u .mtg-face, .mtg-pile.mtg-u { background: #2f6db5; background: linear-gradient(#4c8ad1, #1c4a85); }
+.mtg-b .mtg-face, .mtg-pile.mtg-b { background: #3a3538; background: linear-gradient(#5a5357, #1b181a); }
+.mtg-r .mtg-face, .mtg-pile.mtg-r { background: #c4472c; background: linear-gradient(#e0674a, #8f2513); }
+.mtg-g .mtg-face, .mtg-pile.mtg-g { background: #2f8a4c; background: linear-gradient(#4aa865, #1c5a30); }
+.mtg-m .mtg-face, .mtg-pile.mtg-m { background: #d0aa45; background: linear-gradient(#ecd07a, #9c7a20); }
+.mtg-c .mtg-face, .mtg-pile.mtg-c { background: #a9b1b8; background: linear-gradient(#cfd5da, #7d858c); }
+.mtg-l .mtg-face, .mtg-pile.mtg-l { background: #9c8460; background: linear-gradient(#bea57c, #6b5634); }
+
+.mtg-w .mtg-art { background: #efe6c4; background: radial-gradient(circle, #fffbea, #cfc39a); }
+.mtg-u .mtg-art { background: #3c77b8; background: radial-gradient(circle, #8cc2ec, #1b4a86); }
+.mtg-b .mtg-art { background: #403a40; background: radial-gradient(circle, #7a7180, #151215); }
+.mtg-r .mtg-art { background: #c4502e; background: radial-gradient(circle, #f7a072, #861d0e); }
+.mtg-g .mtg-art { background: #3d8f55; background: radial-gradient(circle, #8fd69e, #1b5530); }
+.mtg-m .mtg-art { background: #d8b552; background: radial-gradient(circle, #fff0b8, #a6801f); }
+.mtg-c .mtg-art { background: #b4bcc3; background: radial-gradient(circle, #eef1f4, #7a838b); }
+.mtg-l .mtg-art { background: #a58c64; background: radial-gradient(circle, #e2cfa6, #6a5332); }
+
+
+/* =====================================================================
+   7. MANA SYMBOLS
+   One <span class="mtg-pip mtg-p-..."> per symbol: a coloured coin with
+   its letter or number. Used on drawn cards and in the info panels.
+     mtg-p-w  W   mtg-p-u  U   mtg-p-b  B   mtg-p-r  R   mtg-p-g  G
+     mtg-p-c  colourless (C)   mtg-p-n  numbers, X, tap (↷)
+     mtg-p-h  hybrid and other two-part symbols, e.g. "W/U"
+   ===================================================================== */
+.mtg-pip {
+  display: inline-block;
+  min-width: 1.25em;
+  height: 1.25em;
+  margin: 0 0.06em;
+  padding: 0 0.1em;
+  box-sizing: border-box;
+  border-radius: 1em;               /* a circle, or a pill for "W/U" */
+  background: #ccc5c0;
+  color: #161616;
+  font-size: 0.85em;
+  font-style: normal;
+  font-weight: bold;
+  line-height: 1.25em;
+  text-align: center;
+  text-shadow: none;
+  vertical-align: middle;
+  box-shadow: -0.06em 0.1em 0 rgba(0, 0, 0, 0.55);
+}
+.mtg-p-w { background: #fbf6d8; }
+.mtg-p-u { background: #aad3f0; }
+.mtg-p-b { background: #c9bfbc; }
+.mtg-p-r { background: #f4a283; }
+.mtg-p-g { background: #9ed2ae; }
+.mtg-p-c { background: #d9d6d3; }
+.mtg-p-n { background: #cbc4bf; }
+.mtg-p-h { background: #e3cc85; font-size: 0.7em; }
+
+/* Bigger symbols in a drawn card's picture box. */
+.mtg-art .mtg-pip { font-size: 1.05em; }
+
+
+/* =====================================================================
+   8. CARD STATES AND BADGES
+   ===================================================================== */
+
+/* TAPPED: add mtg-tapped to the card. The card's space turns sideways
+   (wide and short), and the face is turned a quarter-turn to fill it.
+   translate() moves the face so its middle lands on the middle of the
+   sideways space; rotate(90deg) turns it clockwise. */
+.mtg-tapped { width: 8.8em; height: 6.3em; }
+.mtg-tapped .mtg-face {
+  width: 6.3em;
+  height: 8.8em;
+  transform: translate(1.25em, -1.25em) rotate(90deg);
+}
+
+/* FACE-DOWN: add mtg-down to the card and leave its face empty
+   (a morph, a manifest, or a card in a hidden hand). The rings of
+   colour draw a card back. Also used for the Library pile. */
+.mtg-down .mtg-face, .mtg-pile.mtg-down {
+  padding: 0;
+  background: #4f3218;
+  background: radial-gradient(ellipse, #f0b45a 0, #a2501a 14%, #3d6aa6 30%, #16284f 48%, #3b2410 56%, #7a4f26 100%);
+  border: 0.25em solid #3b2410;
+}
+
+/* BADGES are small labels laid over the card, all inside one
+   <span class="mtg-badges"> that comes first in the card. It has no
+   height of its own; it just marks the card's top-left corner, and each
+   badge is placed from there. Because the badges aren't part of the
+   face, they stay upright when the card is tapped. */
+.mtg-badges { display: block; position: relative; height: 0; z-index: 2; }
+
+/* Power/toughness ("3/3"), on the right edge, just above the bottom.
+   It stays clear of the bottom strip of the card, where the artist's
+   name and the copyright line are printed: Scryfall asks that those
+   are never covered. (On a tapped card that strip is on the left.)
+   "top" counts down from the card's top edge, in the badge's own text
+   size, so it differs for tapped cards and the smaller commander. */
+.mtg-pt, .mtg-loy {
+  position: absolute;
+  right: -0.5em;
+  top: 6.8em;
+  height: 1.3em;
+  box-sizing: border-box;
+  padding: 0 0.35em;
+  font-size: 0.9em;
+  font-weight: bold;
+  line-height: 1.2em;
+  white-space: nowrap;
+  box-shadow: 0 0.1em 0.2em rgba(0, 0, 0, 0.6);
+}
+.mtg-tapped .mtg-pt, .mtg-tapped .mtg-loy { top: 5.9em; }
+.mtg-cmd .mtg-pt, .mtg-cmd .mtg-loy { top: 4.4em; }
+.mtg-pt { background: #f1ede0; border: 1px solid #222; border-radius: 0.3em; color: #111; }
+/* Loyalty (planeswalkers) or defense (battles): a dark shield shape. */
+.mtg-loy { background: #1b1b1b; border: 1px solid #ddd; border-radius: 0.2em 0.2em 0.8em 0.8em; color: #fff; }
+
+/* Counters or a short note ("+1/+1 ×2", "Equipped"), top left. */
+.mtg-note {
+  position: absolute;
+  left: -0.35em;
+  top: -0.35em;
+  max-width: 140%;
+  padding: 0.05em 0.4em;
+  overflow: hidden;
+  background: #ffd84a;
+  border: 1px solid #6b5300;
+  border-radius: 1em;
+  color: #241a00;
+  font-size: 0.72em;
+  font-weight: bold;
+  line-height: 1.25;
+  white-space: nowrap;
+  box-shadow: 0 0.1em 0.2em rgba(0, 0, 0, 0.6);
+}
+/* "ATTACKING" / "BLOCKING" ribbon across the middle of the card. */
+.mtg-tag {
+  position: absolute;
+  left: -0.33em;
+  right: -0.33em;
+  top: 5.8em;
+  padding: 0.1em 0;
+  background: #b3261e;
+  color: #fff;
+  font-size: 0.6em;
+  font-weight: bold;
+  letter-spacing: 0.08em;
+  text-align: center;
+  box-shadow: 0 0.1em 0.3em rgba(0, 0, 0, 0.6);
+}
+.mtg-tapped .mtg-tag { top: 4.2em; }
+.mtg-blocking .mtg-tag { background: #2560c4; }
+
+/* Glow rings. Combat: red for attackers, blue for blockers. */
+.mtg-attacking .mtg-face { box-shadow: 0 0 0 0.18em #e8402f, 0 0 0.8em 0.1em rgba(232, 64, 47, 0.8); }
+.mtg-blocking .mtg-face { box-shadow: 0 0 0 0.18em #3d86ff, 0 0 0.8em 0.1em rgba(61, 134, 255, 0.8); }
+/* On the stack, whose spell it is: blue ring (hero's), red ring (opponent's). */
+.mtg-mine .mtg-face { box-shadow: 0 0 0 0.18em #4f86e8, 0 0.15em 0.3em rgba(0, 0, 0, 0.5); }
+.mtg-theirs .mtg-face { box-shadow: 0 0 0 0.18em #e06a63, 0 0.15em 0.3em rgba(0, 0, 0, 0.5); }
+/* The commander, in the command zone: a pale violet ring. */
+.mtg-cmd .mtg-face { box-shadow: 0 0 0 0.18em #c9a6ff, 0 0.15em 0.3em rgba(0, 0, 0, 0.5); }
+/* Golden glow on the card the scene is about. It wins over the others. */
+.mtg-card.mtg-focus .mtg-face { box-shadow: 0 0 0 0.2em #fff36b, 0 0 1em 0.3em #ffd400; }
+
+
+/* =====================================================================
+   9. HANDS
+   A centred row of cards plus a "Hand: 7" pill. Hidden cards are small
+   card backs (mtg-down); revealed cards are bigger, face-up.
+   ===================================================================== */
+.mtg-hand { margin: 0.3em 0; text-align: center; font-size: 0.7em; }
+.mtg-hand .mtg-card { width: 4.2em; height: 5.9em; margin: 0.15em; }
+.mtg-hand .mtg-down { width: 2.6em; height: 3.65em; }
+/* Shrinks a revealed drawn card's strips to fit the smaller card. */
+.mtg-hand .mtg-face { font-size: 0.667em; }
+.mtg-hand .mtg-down .mtg-face { border-width: 0.2em; }
+
+/* The dark rounded "Hand: 7" pill. */
+.mtg-hand-label {
+  display: inline-block;
+  margin-left: 0.5em;
+  padding: 0.1em 0.6em;
+  vertical-align: middle;
+  background: rgba(0, 0, 0, 0.4);
+  border-radius: 1em;
+  font-size: 1.1em;
+  font-weight: bold;
+}
+
+/* The commander sits among the piles, at pile size. */
+.mtg-piles .mtg-card { width: 4.4em; height: 6.15em; margin: 0 0.2em; white-space: normal; }
+.mtg-piles .mtg-face { font-size: 0.7em; }
+
+
+/* =====================================================================
+   10. THE MIDDLE STRIP: turn, phase and the stack
+   ===================================================================== */
+.mtg-mid {
+  margin: 0.35em 0;
+  padding: 0.3em;
+  background: rgba(0, 0, 0, 0.35);
+  border-radius: 0.4em;
+  text-align: center;
+}
+
+/* "Turn 5 · Jace" box. */
+.mtg-turn {
+  display: inline-block;
+  margin: 0.1em 0.4em;
+  padding: 0.15em 0.6em;
+  background: #ece7d8;
+  border: 0.12em solid #8a8a8a;
+  border-radius: 0.35em;
+  color: #2f3f78;
+  font-weight: bold;
+  vertical-align: middle;
+}
+
+/* The phase track: every phase in a row, the current one lit up gold. */
+.mtg-phases { display: inline-block; vertical-align: middle; }
+.mtg-ph {
+  display: inline-block;
+  margin: 0.1em 0.05em;
+  padding: 0.15em 0.45em;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 1em;
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 0.75em;
+  font-weight: bold;
+}
+.mtg-ph-on { background: #ffd84a; color: #2a1f00; box-shadow: 0 0 0.5em rgba(255, 216, 74, 0.6); }
+
+/* The stack: spells and abilities waiting to resolve, newest first. */
+.mtg-stack { display: block; margin-top: 0.3em; font-size: 0.7em; }
+.mtg-stack-label {
+  display: inline-block;
+  margin-right: 0.4em;
+  padding: 0.1em 0.6em;
+  vertical-align: middle;
+  background: rgba(0, 0, 0, 0.4);
+  border-radius: 1em;
+  font-size: 1.1em;
+  font-weight: bold;
+}
+
+
+/* =====================================================================
+   11. CARD INFO PANEL
+   One card's full details. Works inside the board or on its own in the
+   story, so it sets its own font. Each part is on its own line:
+     mtg-spot-img    the card picture (optional), on the left
+     mtg-spot-name   name, then mtg-spot-cost (mana symbols) after it
+     mtg-spot-type   type line (green)
+     mtg-spot-text   rules text; one mtg-spot-line per ability
+     mtg-spot-flavor flavour text (italic)
+     mtg-spot-stats  power/toughness or loyalty
+   ===================================================================== */
+.mtg-spot {
+  display: block;
+  overflow: hidden;                 /* makes the panel tall enough to fit the picture */
+  margin: 0.6em 0 0.2em;
+  padding: 0.5em 0.75em 0.6em;
+  background: #20283a;
+  background: linear-gradient(#2a3349, #161b27);
+  border: 2px solid #6b7fd6;
+  border-radius: 0.4em;
+  box-shadow: 0 0.15em 0.3em rgba(0, 0, 0, 0.45);
+  color: #f4f4f4;
+  font-family: "Trebuchet MS", "Segoe UI", Verdana, Arial, sans-serif;
+  line-height: 1.35;
+  text-align: left;
+  white-space: normal;
+  cursor: auto;
+}
+/* The picture sits on the left; the text flows on its right. */
+.mtg-spot-img { float: left; width: 8em; margin: 0.1em 0.8em 0.3em 0; }
+.mtg-spot-img img { display: block; width: 100%; height: auto; border-radius: 0.4em; box-shadow: 0 0.15em 0.4em rgba(0, 0, 0, 0.5); }
+
+.mtg-spot-name { color: #ffe14d; font-size: 1.25em; font-weight: bold; text-shadow: 1px 1px 0 #000; }
+.mtg-spot-cost { margin-left: 0.3em; white-space: nowrap; }
+.mtg-spot-type { display: block; color: #a6e88a; font-weight: bold; }
+.mtg-spot-text { display: block; margin-top: 0.3em; }
+.mtg-spot-line { display: block; margin-bottom: 0.25em; }
+.mtg-spot-flavor { display: block; margin-top: 0.3em; color: #c9cfdd; font-style: italic; }
+.mtg-spot-stats {
+  display: inline-block;
+  margin-top: 0.3em;
+  padding: 0.1em 0.5em;
+  background: rgba(0, 0, 0, 0.35);
+  border-radius: 0.25em;
+  color: #ffd84a;
+  font-weight: bold;
+}
+/* Mana symbols inside the panel's text. */
+.mtg-spot .mtg-pip { font-size: 0.75em; }
+.mtg-spot-cost .mtg-pip { font-size: 0.85em; }
+
+
+/* =====================================================================
+   12. POINT AT A CARD TO SEE IT
+   AO3 doesn't allow scripts, so a card carries its own hidden extras,
+   and pointing at the card (or tapping it on a phone) shows them:
+     mtg-hover  a full info panel (section 11), last thing in the card
+     mtg-pop    just the big card picture:
+                  <span class="mtg-pop"><img src="LINK" alt="Name" width="200"></span>
+   Either one opens right under the card, across the width of the board,
+   so it's next to the card even on a phone, where the board can be
+   taller than the screen. Give a card one or the other, not both: only
+   one shows at a time, so a picture never covers the panel's words.
+
+   How it's placed: "position: absolute" lifts it out of the layout,
+   and sideways it's measured against the whole board (.mtg-duel), not
+   the card, so it can't spill off the edge of a phone screen. Up and
+   down, no "top" is given, so it stays where it would have been: just
+   under its card.
+   ===================================================================== */
+.mtg-hover {
+  display: none;                    /* hidden until its card is pointed at */
+  position: absolute;
+  left: 0.5em;                      /* the board's edges, less a small gap */
+  right: 0.5em;
+  margin: 0.3em 0 0;                /* a small gap under the card */
+  z-index: 10;                      /* drawn above everything else */
+  font-size: 1.43em;                /* cards are drawn at 70% size; this undoes it (1 ÷ 0.7) */
+  border-color: #ffd84a;            /* gold edge, so it's clear this is the pointed-at card */
+  box-shadow: 0 0.3em 1.5em rgba(0, 0, 0, 0.7);
+}
+.mtg-card:hover .mtg-hover { display: block; }
+
+.mtg-pop {
+  display: none;
+  position: absolute;
+  left: 0;
+  right: 0;
+  width: 14em;                      /* about 220px at normal text size */
+  max-width: 70%;                   /* but never more than most of the board's width */
+  margin: 0.3em auto 0;             /* "auto" on both sides centres it on the board */
+  z-index: 10;
+  padding: 0.3em;
+  font-size: 1.43em;
+  background: #111;
+  border: 2px solid #ffd84a;
+  border-radius: 0.6em;
+  box-shadow: 0 0.3em 1.5em rgba(0, 0, 0, 0.7);
+}
+.mtg-card:hover .mtg-pop { display: block; }
+.mtg-pop img { display: block; width: 100%; height: auto; border-radius: 0.45em; }
+
+/* A tapped card's face still takes up its upright height in the
+   layout (turning it doesn't change that), which would leave a gap
+   above the panel. This pulls the panel up to the card's real bottom. */
+.mtg-tapped .mtg-hover, .mtg-tapped .mtg-pop { margin-top: -1.5em; }
+
+/* The small hint under the board: "Point at or tap a card…" */
+.mtg-tip { display: block; margin-top: 0.4em; color: rgba(255, 255, 255, 0.7); font-size: 0.8em; text-align: center; }
+
+
+/* =====================================================================
+   13. LIFE LOG LINE
+   A dark banner for attacks, damage and life gain, used in the story
+   between boards. The red stripe means life lost; add mtg-log-heal to
+   turn the stripe and the number green for life gained.
+   ===================================================================== */
+.mtg-log {
+  display: block;
+  max-width: 46em;
+  margin: 1em auto;
+  padding: 0.45em 0.75em;
+  background: #1d1d26;
+  border-left: 0.35em solid #e0524a;
+  border-radius: 0.3em;
+  color: #f1f1f1;
+  font-family: "Trebuchet MS", "Segoe UI", Verdana, Arial, sans-serif;
+  font-weight: bold;
+  line-height: 1.4;
+  text-align: left;
+}
+.mtg-log-act { display: block; color: #ffd84a; }
+.mtg-delta { margin-left: 0.4em; color: #ff6b5e; }
+.mtg-log-heal { border-left-color: #4cc94a; }
+.mtg-log-heal .mtg-delta { color: #7be37a; }

@@ -1,0 +1,213 @@
+<!-- ==================================================================
+  MAGIC: THE GATHERING DUEL BOARD: paste this into your chapter in HTML mode.
+  It needs the ao3-work-skin.css Work Skin to be selected on the work.
+  HOW TO READ THIS:
+  - This block is a comment, like every other block that starts with
+    an exclamation mark and two dashes. Readers never see comments
+    (AO3 removes them when you save).
+  - <div> and <span> are boxes. class="..." names the look from the CSS
+    file; one box can have several looks, separated by spaces, e.g.
+    class="mtg-card mtg-r mtg-pic mtg-tapped" = a card, red frame,
+    shown as its real picture, turned sideways.
+  - &nbsp; is an invisible space. It keeps empty boxes from being
+    deleted by AO3.
+  - Don't leave blank lines inside the board: AO3 may turn them into
+    paragraph breaks.
+  QUICK CHEAT SHEET (full details in the CSS file):
+  Frame colour: mtg-w mtg-u mtg-b mtg-r mtg-g, mtg-m (gold), mtg-c
+              (colourless), mtg-l (land)
+  Real picture: add mtg-pic and put an <img> in the mtg-face
+  Tapped: mtg-tapped     Face-down: mtg-down (and an empty face)
+  Combat: mtg-attacking or mtg-blocking, plus a mtg-tag ribbon
+  Glow: mtg-focus        Stack owner ring: mtg-mine / mtg-theirs
+  Badges: mtg-pt (3/3), mtg-loy (loyalty), mtg-note (counters)
+  Mana symbols: <span class="mtg-pip mtg-p-r">R</span>, see section 7
+  Badges go first in a card, inside <span class="mtg-badges">.
+  Point at a card: a mtg-hover info panel OR a mtg-pop picture, last
+              in the card (section 12 of the CSS). Not both.
+  The picture links below are real Scryfall links. To use another
+  picture, paste its direct link (ending in .jpg or .png) into src="...".
+=================================================================== -->
+<div class="mtg-duel">
+<!-- ========== OPPONENT'S BAR (top right) ==========
+     mtg-bar-opp pushes it right. The piles come first, then the plate,
+     so the plate ends up at the far right. -->
+<div class="mtg-bar mtg-bar-opp">
+<div class="mtg-piles">
+<!-- A pile: big number = cards in it, small label = which pile.
+     Library: mtg-down shows a card back. Graveyard: the frame colour
+     of its top card (here blue, mtg-u). An empty pile: mtg-pile-empty. -->
+<div class="mtg-pile mtg-down"><span class="mtg-count">41</span> <span class="mtg-plabel">Library</span></div>
+<div class="mtg-pile mtg-u"><span class="mtg-count">3</span> <span class="mtg-plabel">Graveyard</span></div>
+<div class="mtg-pile mtg-pile-empty"><span class="mtg-count">0</span> <span class="mtg-plabel">Exile</span></div>
+</div>
+<!-- The plate: name, life, and (only when there are any) poison counters.
+     mtg-plate-opp = red theme. Add mtg-active to the plate of the
+     player whose turn it is (see the hero's plate at the bottom). -->
+<div class="mtg-plate mtg-plate-opp"><span class="mtg-pname">Jace</span><span class="mtg-life"><span class="mtg-life-tag">LIFE</span> <span class="mtg-life-num">14</span> <span class="mtg-poison">☣ 2</span></span></div>
+</div>
+<!-- ========== OPPONENT'S HAND ==========
+     One line per hidden card. Update the number in the pill. -->
+<div class="mtg-hand">
+<div class="mtg-card mtg-down"><span class="mtg-face">&nbsp;</span></div>
+<div class="mtg-card mtg-down"><span class="mtg-face">&nbsp;</span></div>
+<span class="mtg-hand-label">Hand: 2</span>
+</div>
+<!-- ========== OPPONENT'S SIDE OF THE BATTLEFIELD ==========
+     Two rows. On the opponent's side the back row (lands, artifacts,
+     enchantments) is on top and the front row (creatures,
+     planeswalkers) is nearer the middle. Add or delete cards freely:
+     a row wraps onto a new line when it runs out of room. -->
+<div class="mtg-side mtg-opp">
+<div class="mtg-row mtg-back-row">
+<!-- A TAPPED LAND, shown as its real picture. mtg-tapped turns it
+     sideways. The mtg-pop line makes the big picture appear under
+     the card when a reader points at or taps it. -->
+<div class="mtg-card mtg-l mtg-pic mtg-tapped">
+<span class="mtg-face"><img src="https://cards.scryfall.io/normal/front/f/c/fc9a66a1-367c-4035-a22e-00fab55be5a0.jpg?1783930645" alt="Island" width="63"></span>
+<span class="mtg-pop"><img src="https://cards.scryfall.io/normal/front/f/c/fc9a66a1-367c-4035-a22e-00fab55be5a0.jpg?1783930645" alt="Island card" width="200"></span>
+</div>
+<!-- The same, untapped: just leave out mtg-tapped. -->
+<div class="mtg-card mtg-l mtg-pic">
+<span class="mtg-face"><img src="https://cards.scryfall.io/normal/front/4/b/4be96696-aff8-4ef9-97dc-8221ef745de9.jpg?1783930647" alt="Plains" width="63"></span>
+<span class="mtg-pop"><img src="https://cards.scryfall.io/normal/front/4/b/4be96696-aff8-4ef9-97dc-8221ef745de9.jpg?1783930647" alt="Plains card" width="200"></span>
+</div>
+</div>
+<div class="mtg-row mtg-front-row">
+<!-- A CREATURE WITH AN INFO PANEL. The mtg-badges line comes first:
+     mtg-pt is the power/toughness badge on the card. The mtg-spot
+     mtg-hover block is the card's own details panel: hidden until a
+     reader points at or taps the card, then shown under it, across
+     the board. Its parts:
+     picture, name + mana cost, type line, rules text (one
+     mtg-spot-line per ability), flavour text, power/toughness. -->
+<div class="mtg-card mtg-w mtg-pic">
+<span class="mtg-badges"><span class="mtg-pt">4/4</span></span>
+<span class="mtg-face"><img src="https://cards.scryfall.io/normal/front/b/8/b8c5e74c-96e7-4a1f-93b7-14d776fe4b2d.jpg?1787563091" alt="Serra Angel" width="63"></span>
+<div class="mtg-spot mtg-hover">
+<span class="mtg-spot-img"><img src="https://cards.scryfall.io/normal/front/b/8/b8c5e74c-96e7-4a1f-93b7-14d776fe4b2d.jpg?1787563091" alt="Serra Angel card" width="140"></span>
+<span class="mtg-spot-head"><span class="mtg-spot-name">Serra Angel</span> <span class="mtg-spot-cost"><span class="mtg-pip mtg-p-n">3</span><span class="mtg-pip mtg-p-w">W</span><span class="mtg-pip mtg-p-w">W</span></span></span>
+<span class="mtg-spot-type">Creature — Angel</span>
+<span class="mtg-spot-text"><span class="mtg-spot-line">Flying</span><span class="mtg-spot-line">Vigilance (Attacking doesn't cause this creature to tap.)</span></span>
+<span class="mtg-spot-flavor">Follow the light. In its absence, follow her.</span>
+<span class="mtg-spot-stats">4/4</span>
+</div>
+</div>
+</div>
+</div>
+<!-- ========== THE MIDDLE STRIP ==========
+     Turn number and whose turn it is, then the phase track: move
+     mtg-ph-on to the current phase. For a step inside a phase, change
+     its words, e.g. "Combat: Attackers", "Combat: Blockers",
+     "End: Cleanup". -->
+<div class="mtg-mid">
+<span class="mtg-turn">Turn 7 · Chandra</span>
+<span class="mtg-phases"><span class="mtg-ph">Untap</span> <span class="mtg-ph">Upkeep</span> <span class="mtg-ph">Draw</span> <span class="mtg-ph">Main 1</span> <span class="mtg-ph mtg-ph-on">Combat: Attackers</span> <span class="mtg-ph">Main 2</span> <span class="mtg-ph">End</span></span>
+<!-- THE STACK (delete this whole block when it's empty). Newest spell
+     first. mtg-mine = a blue ring (the hero's spell), mtg-theirs = red. -->
+<div class="mtg-stack">
+<span class="mtg-stack-label">Stack</span>
+<div class="mtg-card mtg-r mtg-pic mtg-mine">
+<span class="mtg-face"><img src="https://cards.scryfall.io/normal/front/4/3/435589bb-27c6-4a6d-9d63-394d5092b9d8.jpg?1783942371" alt="Lightning Bolt" width="63"></span>
+<div class="mtg-spot mtg-hover">
+<span class="mtg-spot-img"><img src="https://cards.scryfall.io/normal/front/4/3/435589bb-27c6-4a6d-9d63-394d5092b9d8.jpg?1783942371" alt="Lightning Bolt card" width="140"></span>
+<span class="mtg-spot-head"><span class="mtg-spot-name">Lightning Bolt</span> <span class="mtg-spot-cost"><span class="mtg-pip mtg-p-r">R</span></span></span>
+<span class="mtg-spot-type">Instant</span>
+<span class="mtg-spot-text"><span class="mtg-spot-line">Lightning Bolt deals 3 damage to any target.</span></span>
+</div>
+</div>
+</div>
+</div>
+<!-- ========== THE HERO'S SIDE OF THE BATTLEFIELD ==========
+     Mirrored: front row first (nearest the middle), back row last. -->
+<div class="mtg-side mtg-me">
+<div class="mtg-row mtg-front-row">
+<!-- AN ATTACKING CREATURE: tapped, with mtg-attacking (red glow) and
+     the ATTACKING ribbon (mtg-tag). For a blocker use mtg-blocking and
+     BLOCKING. mtg-focus = golden glow: the card the scene is about
+     (its details are also shown in the panel under the board). -->
+<div class="mtg-card mtg-r mtg-pic mtg-tapped mtg-attacking mtg-focus">
+<span class="mtg-badges"><span class="mtg-pt">5/5</span><span class="mtg-tag">ATTACKING</span></span>
+<span class="mtg-face"><img src="https://cards.scryfall.io/normal/front/7/0/702c4781-670b-49ae-b511-90ed119841b0.jpg?1787562519" alt="Shivan Dragon" width="63"></span>
+<div class="mtg-spot mtg-hover">
+<span class="mtg-spot-img"><img src="https://cards.scryfall.io/normal/front/7/0/702c4781-670b-49ae-b511-90ed119841b0.jpg?1787562519" alt="Shivan Dragon card" width="140"></span>
+<span class="mtg-spot-head"><span class="mtg-spot-name">Shivan Dragon</span> <span class="mtg-spot-cost"><span class="mtg-pip mtg-p-n">4</span><span class="mtg-pip mtg-p-r">R</span><span class="mtg-pip mtg-p-r">R</span></span></span>
+<span class="mtg-spot-type">Creature — Dragon</span>
+<span class="mtg-spot-text"><span class="mtg-spot-line">Flying</span><span class="mtg-spot-line"><span class="mtg-pip mtg-p-r">R</span>: This creature gets +1/+0 until end of turn.</span></span>
+<span class="mtg-spot-flavor">The undisputed master of the mountains of Shiv.</span>
+<span class="mtg-spot-stats">5/5</span>
+</div>
+</div>
+<!-- A FACE-DOWN CARD (a morph): mtg-down and an empty face. Badges
+     still work: mtg-note is the small yellow label at the top left,
+     for counters or a note like "+1/+1 ×2". -->
+<div class="mtg-card mtg-down">
+<span class="mtg-badges"><span class="mtg-pt">2/2</span><span class="mtg-note">Morph</span></span>
+<span class="mtg-face">&nbsp;</span>
+</div>
+<!-- A DRAWN CARD (no picture): name strip, picture box with the mana
+     cost, type line. No hover panel and no pop-up, so pointing at it
+     does nothing. -->
+<div class="mtg-card mtg-g">
+<span class="mtg-badges"><span class="mtg-pt">2/2</span></span>
+<span class="mtg-face"><span class="mtg-cname">Grizzly Bears</span><span class="mtg-art"><span class="mtg-pip mtg-p-n">1</span><span class="mtg-pip mtg-p-g">G</span></span><span class="mtg-type">Creature — Bear</span></span>
+</div>
+</div>
+<div class="mtg-row mtg-back-row">
+<div class="mtg-card mtg-l mtg-pic mtg-tapped">
+<span class="mtg-face"><img src="https://cards.scryfall.io/normal/front/b/9/b92c8925-ecfc-4ece-b83a-f12e98a938ab.jpg?1783930645" alt="Mountain" width="63"></span>
+<span class="mtg-pop"><img src="https://cards.scryfall.io/normal/front/b/9/b92c8925-ecfc-4ece-b83a-f12e98a938ab.jpg?1783930645" alt="Mountain card" width="200"></span>
+</div>
+<div class="mtg-card mtg-l mtg-pic">
+<span class="mtg-face"><img src="https://cards.scryfall.io/normal/front/3/2/3279314f-d639-4489-b2ab-3621bb3ca64b.jpg?1783930641" alt="Forest" width="63"></span>
+<span class="mtg-pop"><img src="https://cards.scryfall.io/normal/front/3/2/3279314f-d639-4489-b2ab-3621bb3ca64b.jpg?1783930641" alt="Forest card" width="200"></span>
+</div>
+</div>
+</div>
+<!-- ========== THE HERO'S HAND ==========
+     A hidden card, then a revealed one (shown as its picture, with a
+     pop-up). A revealed card can also be a drawn card: use the same
+     face as Grizzly Bears above. -->
+<div class="mtg-hand">
+<div class="mtg-card mtg-down"><span class="mtg-face">&nbsp;</span></div>
+<div class="mtg-card mtg-g mtg-pic">
+<span class="mtg-face"><img src="https://cards.scryfall.io/normal/front/d/4/d4db271b-b7f2-4a12-b606-2215bab4ac17.jpg?1783943002" alt="Giant Growth" width="44"></span>
+<span class="mtg-pop"><img src="https://cards.scryfall.io/normal/front/d/4/d4db271b-b7f2-4a12-b606-2215bab4ac17.jpg?1783943002" alt="Giant Growth card" width="200"></span>
+</div>
+<span class="mtg-hand-label">Hand: 2</span>
+</div>
+<!-- ========== THE HERO'S BAR (bottom left) ==========
+     Plate first, then piles. mtg-active = it's this player's turn.
+     For Commander, put the commander after the piles, as a card with
+     mtg-cmd added (a pale violet ring), e.g.
+     <div class="mtg-card mtg-m mtg-pic mtg-cmd"> ...face... </div> -->
+<div class="mtg-bar">
+<div class="mtg-plate mtg-plate-me mtg-active"><span class="mtg-pname">Chandra</span><span class="mtg-life"><span class="mtg-life-tag">LIFE</span> <span class="mtg-life-num">17</span></span></div>
+<div class="mtg-piles">
+<div class="mtg-pile mtg-down"><span class="mtg-count">42</span> <span class="mtg-plabel">Library</span></div>
+<div class="mtg-pile mtg-r"><span class="mtg-count">2</span> <span class="mtg-plabel">Graveyard</span></div>
+<div class="mtg-pile mtg-pile-exile"><span class="mtg-count">1</span> <span class="mtg-plabel">Exile</span></div>
+</div>
+</div>
+<!-- ========== CARD INFO PANEL ==========
+     Details of the highlighted (mtg-focus) card, always visible under
+     the board. Same parts as a hover panel, without mtg-hover. It also
+     works on its own outside the board. Delete it if you don't want it. -->
+<div class="mtg-spot">
+<span class="mtg-spot-img"><img src="https://cards.scryfall.io/normal/front/7/0/702c4781-670b-49ae-b511-90ed119841b0.jpg?1787562519" alt="Shivan Dragon card" width="140"></span>
+<span class="mtg-spot-head"><span class="mtg-spot-name">Shivan Dragon</span> <span class="mtg-spot-cost"><span class="mtg-pip mtg-p-n">4</span><span class="mtg-pip mtg-p-r">R</span><span class="mtg-pip mtg-p-r">R</span></span></span>
+<span class="mtg-spot-type">Creature — Dragon</span>
+<span class="mtg-spot-text"><span class="mtg-spot-line">Flying</span><span class="mtg-spot-line"><span class="mtg-pip mtg-p-r">R</span>: This creature gets +1/+0 until end of turn.</span></span>
+<span class="mtg-spot-flavor">The undisputed master of the mountains of Shiv.</span>
+<span class="mtg-spot-stats">5/5</span>
+</div>
+<span class="mtg-tip">Point at or tap a card to see it up close.</span>
+</div>
+<!-- ========== LIFE LOG LINE (outside the board) ==========
+     Drop one of these into the story for attacks, burn and life gain.
+     First line = what happened; then the life change; mtg-delta = the
+     amount. For life gain, use class="mtg-log mtg-log-heal" to turn it green. -->
+<div class="mtg-log">
+<span class="mtg-log-act">⚔ Shivan Dragon attacks Jace!</span>
+Jace life 14 → 9 <span class="mtg-delta">−5</span>
+</div>
