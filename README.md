@@ -7,6 +7,10 @@ Make Magic: The Gathering game boards for your AO3 fic by clicking and typing. N
 ## What it does
 
 - Shows the whole table: both players' life and poison counters, hands, Library, Graveyard and Exile, the command zone for Commander, two rows of permanents per player, the phase track, whose turn it is, and the stack.
+- Three kinds of game:
+  - **One against one.**
+  - **Two-Headed Giant** (two against two). Each partner has their own library, graveyard, hand and battlefield, sitting on the outside of their team. Each team can share one life total and poison count, as the official rules have it (one plate with both names, starting at 30), or every player can keep their own.
+  - **Free-for-all** with four players, each on their own, with a colour each: purple, red, blue and gold, top to bottom.
 - **Look up** fills in a card's mana cost, type line, rules text, flavour text, power/toughness or loyalty and its picture, by name, from [Scryfall](https://scryfall.com/docs/api)'s free card database. **Choose another printing** lets you pick the art you want.
 - Cards can be **tapped** (turned sideways), face-down, attacking or blocking, and carry a small label for counters ("+1/+1 ×2").
 - Cards in hand can be kept secret or **revealed** face-up.

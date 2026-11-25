@@ -710,3 +710,42 @@
 .mtg-delta { margin-left: 0.4em; color: #ff6b5e; }
 .mtg-log-heal { border-left-color: #4cc94a; }
 .mtg-log-heal .mtg-delta { color: #7be37a; }
+
+
+/* =====================================================================
+   14. TWO-HEADED GIANT AND FREE-FOR-ALL (optional)
+   Four players. Each one has their own bar (plate and piles), hand and
+   side, in this order down the board: the opponent's partner, the
+   opponent, the middle strip, the hero, the hero's partner.
+   - Two-Headed Giant: add mtg-2hg to the board. A partner's bar, hand
+     and side get mtg-p2 next to their usual classes:
+       <div class="mtg-side mtg-opp mtg-p2">
+   - Add mtg-team-life too if each team shares one life total. The team
+     then has one plate with both names, in the outer partner's bar:
+       <span class="mtg-pname"><span class="mtg-pn">Jace</span> &amp; <span class="mtg-pn">Teferi</span></span>
+     and the inner player's bar holds just their piles.
+   - Free-for-all: add mtg-ffa to the board instead. Every player is on
+     their own, top to bottom: purple, red, blue, gold. The outer two
+     add a colour class:
+       on their plate:  <div class="mtg-plate mtg-plate-opp mtg-p2 mtg-plate-purple">
+       on their side:   <div class="mtg-side mtg-opp mtg-p2 mtg-purple">
+       on their spells on the stack, in place of mtg-mine / mtg-theirs:
+                        mtg-ring-purple or mtg-ring-gold
+   - Each hand label names its player (mtg-hname). mtg-hand-act turns it
+     gold for whoever's turn it is:
+       <span class="mtg-hand-label mtg-hand-act">▶ <span class="mtg-hname">Jace</span> · Hand: 5</span>
+   ===================================================================== */
+/* A little more room above each partner's bar, so the four players
+   read as separate groups. */
+.mtg-bar.mtg-p2 { margin-top: 0.5em; }
+/* The hand label of the player whose turn it is: gold, with dark text. */
+.mtg-hand-act { background: #ffd84a; color: #2a1f00; }
+/* A name stays on one line in a two-name plate. */
+.mtg-pn { white-space: nowrap; }
+/* Free-for-all colours for the outer two players. */
+.mtg-plate-purple { background: #3a1f4d; border-color: #b06ad9; }
+.mtg-plate-gold { background: #4a3810; border-color: #e0b040; }
+.mtg-purple { background: rgba(176, 106, 217, 0.12); border-color: rgba(176, 106, 217, 0.5); }
+.mtg-gold { background: rgba(224, 176, 64, 0.12); border-color: rgba(224, 176, 64, 0.5); }
+.mtg-ring-purple .mtg-face { box-shadow: 0 0 0 0.18em #b06ad9, 0 0.15em 0.3em rgba(0, 0, 0, 0.5); }
+.mtg-ring-gold .mtg-face { box-shadow: 0 0 0 0.18em #e0b040, 0 0.15em 0.3em rgba(0, 0, 0, 0.5); }

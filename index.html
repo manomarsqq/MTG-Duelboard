@@ -131,6 +131,7 @@ body {
 .row3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0 10px; }
 .span2 { grid-column: span 2; }
 .span3 { grid-column: span 3; }
+[hidden] { display: none !important; }
 input[type="text"], input[type="number"], input[type="url"], select, textarea {
   width: 100%;
   box-sizing: border-box;
@@ -1000,6 +1001,45 @@ details[open] summary { margin-bottom: 8px; }
 .mtg-delta { margin-left: 0.4em; color: #ff6b5e; }
 .mtg-log-heal { border-left-color: #4cc94a; }
 .mtg-log-heal .mtg-delta { color: #7be37a; }
+
+
+/* =====================================================================
+   14. TWO-HEADED GIANT AND FREE-FOR-ALL (optional)
+   Four players. Each one has their own bar (plate and piles), hand and
+   side, in this order down the board: the opponent's partner, the
+   opponent, the middle strip, the hero, the hero's partner.
+   - Two-Headed Giant: add mtg-2hg to the board. A partner's bar, hand
+     and side get mtg-p2 next to their usual classes:
+       <div class="mtg-side mtg-opp mtg-p2">
+   - Add mtg-team-life too if each team shares one life total. The team
+     then has one plate with both names, in the outer partner's bar:
+       <span class="mtg-pname"><span class="mtg-pn">Jace</span> &amp; <span class="mtg-pn">Teferi</span></span>
+     and the inner player's bar holds just their piles.
+   - Free-for-all: add mtg-ffa to the board instead. Every player is on
+     their own, top to bottom: purple, red, blue, gold. The outer two
+     add a colour class:
+       on their plate:  <div class="mtg-plate mtg-plate-opp mtg-p2 mtg-plate-purple">
+       on their side:   <div class="mtg-side mtg-opp mtg-p2 mtg-purple">
+       on their spells on the stack, in place of mtg-mine / mtg-theirs:
+                        mtg-ring-purple or mtg-ring-gold
+   - Each hand label names its player (mtg-hname). mtg-hand-act turns it
+     gold for whoever's turn it is:
+       <span class="mtg-hand-label mtg-hand-act">▶ <span class="mtg-hname">Jace</span> · Hand: 5</span>
+   ===================================================================== */
+/* A little more room above each partner's bar, so the four players
+   read as separate groups. */
+.mtg-bar.mtg-p2 { margin-top: 0.5em; }
+/* The hand label of the player whose turn it is: gold, with dark text. */
+.mtg-hand-act { background: #ffd84a; color: #2a1f00; }
+/* A name stays on one line in a two-name plate. */
+.mtg-pn { white-space: nowrap; }
+/* Free-for-all colours for the outer two players. */
+.mtg-plate-purple { background: #3a1f4d; border-color: #b06ad9; }
+.mtg-plate-gold { background: #4a3810; border-color: #e0b040; }
+.mtg-purple { background: rgba(176, 106, 217, 0.12); border-color: rgba(176, 106, 217, 0.5); }
+.mtg-gold { background: rgba(224, 176, 64, 0.12); border-color: rgba(224, 176, 64, 0.5); }
+.mtg-ring-purple .mtg-face { box-shadow: 0 0 0 0.18em #b06ad9, 0 0.15em 0.3em rgba(0, 0, 0, 0.5); }
+.mtg-ring-gold .mtg-face { box-shadow: 0 0 0 0.18em #e0b040, 0 0.15em 0.3em rgba(0, 0, 0, 0.5); }
 </script>
 
 <div class="page">
@@ -1042,15 +1082,34 @@ details[open] summary { margin-bottom: 8px; }
 
       <section class="panel" aria-labelledby="players-h">
         <h3 id="players-h">Players and turn</h3>
+        <div class="field"><label for="mode">Kind of game</label>
+          <select id="mode" data-p="mode">
+            <option value="single">One against one</option>
+            <option value="2hg">Two-Headed Giant: two against two</option>
+            <option value="ffa">Free-for-all: four players, each on their own</option>
+          </select>
+        </div>
+        <div class="team-only" style="margin-bottom:10px">
+          <label class="check"><input type="checkbox" id="team-life" data-p="teamLife"><span>Each team shares one life total and one poison count (the Two-Headed Giant rule)</span></label>
+        </div>
+        <p class="hint four-only" id="mode-note" style="margin-bottom:10px"></p>
         <div class="row3">
-          <div class="field span3"><label for="opp-name">Opponent (top)</label><input type="text" id="opp-name" data-p="opp.name"></div>
-          <div class="field"><label for="opp-life">Life</label><input type="number" id="opp-life" min="-999" max="9999" data-p="opp.life"></div>
-          <div class="field"><label for="opp-poison">Poison</label><input type="number" id="opp-poison" min="0" max="99" data-p="opp.poison"></div>
+          <div class="field span3 four-only"><label for="opp2-name" id="opp2-label">Opponent’s partner (top)</label><input type="text" id="opp2-name" data-p="opp2.name"></div>
+          <div class="field four-only solo-life"><label for="opp2-life">Life</label><input type="number" id="opp2-life" min="-999" max="9999" data-p="opp2.life"></div>
+          <div class="field four-only solo-life"><label for="opp2-poison">Poison</label><input type="number" id="opp2-poison" min="0" max="99" data-p="opp2.poison"></div>
+          <div class="field four-only"><label for="opp2-hand">Cards in hand</label><input type="number" id="opp2-hand" min="0" max="20" data-p="opp2.hand"></div>
+          <div class="field span3"><label for="opp-name" id="opp-label">Opponent (top)</label><input type="text" id="opp-name" data-p="opp.name"></div>
+          <div class="field"><label for="opp-life" id="opp-life-label">Life</label><input type="number" id="opp-life" min="-999" max="9999" data-p="opp.life"></div>
+          <div class="field"><label for="opp-poison" id="opp-poison-label">Poison</label><input type="number" id="opp-poison" min="0" max="99" data-p="opp.poison"></div>
           <div class="field"><label for="opp-hand">Cards in hand</label><input type="number" id="opp-hand" min="0" max="20" data-p="opp.hand"></div>
-          <div class="field span3"><label for="me-name">Hero (bottom)</label><input type="text" id="me-name" data-p="me.name"></div>
-          <div class="field"><label for="me-life">Life</label><input type="number" id="me-life" min="-999" max="9999" data-p="me.life"></div>
-          <div class="field"><label for="me-poison">Poison</label><input type="number" id="me-poison" min="0" max="99" data-p="me.poison"></div>
+          <div class="field span3"><label for="me-name" id="me-label">Hero (bottom)</label><input type="text" id="me-name" data-p="me.name"></div>
+          <div class="field"><label for="me-life" id="me-life-label">Life</label><input type="number" id="me-life" min="-999" max="9999" data-p="me.life"></div>
+          <div class="field"><label for="me-poison" id="me-poison-label">Poison</label><input type="number" id="me-poison" min="0" max="99" data-p="me.poison"></div>
           <div class="field"><label for="me-hand">Cards in hand</label><input type="number" id="me-hand" min="0" max="20" data-p="me.hand"></div>
+          <div class="field span3 four-only"><label for="me2-name" id="me2-label">Hero’s partner (bottom)</label><input type="text" id="me2-name" data-p="me2.name"></div>
+          <div class="field four-only solo-life"><label for="me2-life">Life</label><input type="number" id="me2-life" min="-999" max="9999" data-p="me2.life"></div>
+          <div class="field four-only solo-life"><label for="me2-poison">Poison</label><input type="number" id="me2-poison" min="0" max="99" data-p="me2.poison"></div>
+          <div class="field four-only"><label for="me2-hand">Cards in hand</label><input type="number" id="me2-hand" min="0" max="20" data-p="me2.hand"></div>
           <div class="field"><label for="turn">Turn</label><input type="number" id="turn" min="1" max="999" data-p="turn"></div>
           <div class="field span2"><label for="active">Whose turn</label><select id="active" data-p="active"></select></div>
           <div class="field span3"><label for="phase">Phase or step</label><select id="phase" data-p="phase"></select></div>
@@ -1132,6 +1191,34 @@ details[open] summary { margin-bottom: 8px; }
   var PILE_LABEL = { library: "Library", gy: "Graveyard", exile: "Exile" };
   var ROW_NAME = { front: "front row", back: "back row", hand: "hand" };
   var SIDES = ["opp", "me"];
+  /* Two-Headed Giant and free-for-all have four players, top of the board first:
+     the opponent's partner, the opponent, the hero and the hero's partner. */
+  var DUELISTS = ["opp2", "opp", "me", "me2"];
+  var TEAM = { opp2: "opp", opp: "opp", me: "me", me2: "me" };
+  /* In a free-for-all the outer two players get a colour of their own (the inner two keep red and blue). */
+  var COLOUR = { opp2: "purple", me2: "gold" };
+  var isFour = function (s) { return s.mode === "2hg" || s.mode === "ffa"; };
+  var isFfa = function (s) { return s.mode === "ffa"; };
+  var isPartner = function (who) { return who === "opp2" || who === "me2"; };
+  /* Whether each Two-Headed Giant team shares one life total and poison count (kept on opp / me). */
+  var teamLife = function (s) { return s.mode === "2hg" && s.teamLife; };
+  var inPlay = function (s) { return isFour(s) ? DUELISTS : SIDES; };
+  var teamName = function (s, t) { return s[t].name + " & " + s[t + "2"].name; };
+  /* Whose life total a player uses: their team's when the team shares one. */
+  var lifeKey = function (s, who) { return teamLife(s) ? TEAM[who] : who; };
+  var lifeName = function (s, who) { return teamLife(s) ? teamName(s, TEAM[who]) : s[who].name; };
+  /* With a shared life total, a team takes its turn together, so "active" is a team. */
+  var isActive = function (s, who) { return teamLife(s) ? TEAM[who] === s.active : s.active === who; };
+  var activeName = function (s) { return teamLife(s) ? teamName(s, TEAM[s.active] || "me") : (s[s.active] || s.me).name; };
+  /* Choices for "whose turn" and "whose life changes": the teams, or every player in the game. */
+  function whoChoices(s) {
+    return teamLife(s) ? SIDES.map(function (t) { return [t, teamName(s, t)]; }) : inPlay(s).map(function (w) { return [w, s[w].name]; });
+  }
+  /* Keeps the turn and the life line pointing at someone who's in this kind of game. */
+  function fixWho(s, who) {
+    if (teamLife(s)) return TEAM[who] || "me";
+    return inPlay(s).indexOf(who) >= 0 ? who : TEAM[who] || "me";
+  }
 
   function newCard() {
     return { name: "", frame: "c", cost: "", produced: "", typeLine: "", text: "", flavor: "", power: "", toughness: "", loyalty: "",
@@ -1142,8 +1229,15 @@ details[open] summary { margin-bottom: 8px; }
     return { name: name, life: 20, poison: 0, library: 53, gy: { count: 0, top: "c" }, exile: 0, cmd: null, hand: handOf(7), front: [], back: [] };
   }
   function emptyState() {
-    return { v: 1, opp: newSide("Opponent"), me: newSide("Hero"), turn: 1, active: "me", phase: "main1", stack: [], showInfo: true,
+    return { v: 1, opp: newSide("Opponent"), me: newSide("Hero"), opp2: newSide("Opponent’s partner"), me2: newSide("Hero’s partner"),
+      mode: "single", teamLife: true, turn: 1, active: "me", phase: "main1", stack: [], showInfo: true,
       log: { text: "⚔ Attack!", who: "opp", delta: -3 } };
+  }
+  /* Boards saved before Two-Headed Giant and free-for-all existed get the partners. */
+  function upgrade(s) {
+    var e = emptyState();
+    ["opp2", "me2", "mode", "teamLife"].forEach(function (f) { if (s[f] == null) s[f] = e[f]; });
+    return s;
   }
 
   /* ---------- The example game ---------- */
@@ -1254,7 +1348,7 @@ details[open] summary { margin-bottom: 8px; }
   }
   /* One card anywhere on the board. ctx = field, hand, stack or cmd.
      extra = preview-only attributes (click target), never in the AO3 code. */
-  function cardHTML(c, ctx, extra, selCls) {
+  function cardHTML(c, ctx, extra, selCls, ownerCls) {
     extra = extra || ""; selCls = selCls || "";
     var cls = ["mtg-card"];
     if (ctx === "hand" && !c.revealed) return '<div class="mtg-card mtg-down' + selCls + '"' + extra + '><span class="mtg-face">&nbsp;</span></div>';
@@ -1268,7 +1362,7 @@ details[open] summary { margin-bottom: 8px; }
       if (c.tapped) cls.push("mtg-tapped");
       if (c.combat) cls.push(c.combat === "atk" ? "mtg-attacking" : "mtg-blocking");
     }
-    if (ctx === "stack") cls.push(c.owner === "opp" ? "mtg-theirs" : "mtg-mine");
+    if (ctx === "stack") cls.push(ownerCls || (c.owner === "opp" ? "mtg-theirs" : "mtg-mine"));
     if (ctx === "cmd") cls.push("mtg-cmd");
     if (c.glow && !c.faceDown) cls.push("mtg-focus");
     var L = ['<div class="' + cls.join(" ") + selCls + '"' + extra + ">"];
@@ -1302,12 +1396,24 @@ details[open] summary { margin-bottom: 8px; }
     return preview ? '<button type="button" class="add-slot" data-add="' + where + '" aria-label="' + esc(label) + '"><span><b>+</b></span></button>' : "";
   }
 
-  function plateHTML(s, side) {
-    var p = s[side];
-    return '<div class="mtg-plate mtg-plate-' + side + (s.active === side ? " mtg-active" : "") + '">' +
-      '<span class="mtg-pname">' + esc(p.name) + "</span>" +
+  /* A name plate. When a Two-Headed Giant team shares its life total, one plate carries both
+     names; otherwise a partner's plate is marked mtg-p2, and in a free-for-all the outer two
+     players' plates get their own colour. */
+  function plateHTML(s, who) {
+    var team = TEAM[who], shared = teamLife(s), p = s[lifeKey(s, who)];
+    var name = shared ? '<span class="mtg-pn">' + esc(s[team].name) + '</span> &amp; <span class="mtg-pn">' + esc(s[team + "2"].name) + "</span>" : esc(s[who].name);
+    return '<div class="mtg-plate mtg-plate-' + team + (isPartner(who) && !shared ? " mtg-p2" : "") + (isFfa(s) && COLOUR[who] ? " mtg-plate-" + COLOUR[who] : "") +
+      (isActive(s, who) ? " mtg-active" : "") + '">' +
+      '<span class="mtg-pname">' + name + "</span>" +
       '<span class="mtg-life"><span class="mtg-life-tag">LIFE</span> <span class="mtg-life-num">' + p.life + "</span>" +
       (p.poison > 0 ? ' <span class="mtg-poison">☣ ' + p.poison + "</span>" : "") + "</span></div>";
+  }
+  /* Whose spell it is, on the stack: a red ring for the opponent's team, blue for the hero's,
+     and purple or gold for the outer players in a free-for-all. */
+  function ownerClass(s, owner) {
+    if (isFfa(s) && COLOUR[owner]) return "mtg-ring-" + COLOUR[owner];
+    var team = TEAM[owner] || "me";
+    return (team === "opp" ? "mtg-theirs" : "mtg-mine") + (s.mode === "2hg" && isPartner(owner) ? " mtg-p2" : "");
   }
   function pileHTML(side, which, count, cls, preview, sel) {
     var a = pv(preview, sel, side + "." + which);
@@ -1324,20 +1430,32 @@ details[open] summary { margin-bottom: 8px; }
     L.push("</div>");
     return L.filter(Boolean).join("\n");
   }
-  function barHTML(s, side, preview, sel) {
-    var parts = [plateHTML(s, side), pilesHTML(s, side, preview, sel)];
-    if (side === "opp") parts.reverse();
-    return '<div class="mtg-bar' + (side === "opp" ? " mtg-bar-opp" : "") + '">\n' + parts.join("\n") + "\n</div>";
+  /* A player's plate and piles. A team that shares its life total has one plate, in the outer
+     partner's bar at the edge of the board; the inner player's bar then holds just their piles. */
+  function barHTML(s, who, preview, sel) {
+    var top = TEAM[who] === "opp", parts = [pilesHTML(s, who, preview, sel)];
+    if (!teamLife(s) || isPartner(who)) parts.unshift(plateHTML(s, who));
+    if (top) parts.reverse();
+    return '<div class="mtg-bar' + (top ? " mtg-bar-opp" : "") + (isPartner(who) ? " mtg-p2" : "") + '">\n' + parts.join("\n") + "\n</div>";
   }
-  function listHTML(list, ctx, key, preview, sel) {
-    return list.map(function (c, i) { var a = pv(preview, sel, key + "." + i); return cardHTML(c, ctx, a.extra, a.cls); });
+  function listHTML(list, ctx, key, preview, sel, s) {
+    return list.map(function (c, i) { var a = pv(preview, sel, key + "." + i); return cardHTML(c, ctx, a.extra, a.cls, s && ctx === "stack" ? ownerClass(s, c.owner) : ""); });
   }
-  function handHTML(s, side, preview, sel) {
-    var p = s[side], L = ['<div class="mtg-hand">'];
-    L = L.concat(listHTML(p.hand, "hand", side + ".hand", preview, sel));
-    L.push(addBtn(preview, side + ".hand", "Add a card to the hand"));
-    L.push('<span class="mtg-hand-label">Hand: ' + p.hand.length + "</span>", "</div>");
+  /* A player's hand. With four players the label names the player, and turns gold with a ▶
+     for whoever's turn it is (both partners, when a team shares its turn). */
+  function handHTML(s, who, preview, sel) {
+    var p = s[who], four = isFour(s), act = four && isActive(s, who), L = ['<div class="mtg-hand' + (isPartner(who) ? " mtg-p2" : "") + '">'];
+    L = L.concat(listHTML(p.hand, "hand", who + ".hand", preview, sel));
+    L.push(addBtn(preview, who + ".hand", "Add a card to the hand"));
+    L.push('<span class="mtg-hand-label' + (act ? " mtg-hand-act" : "") + '">' + (act ? "▶ " : "") +
+      (four ? '<span class="mtg-hname">' + esc(p.name) + "</span> · " : "") + "Hand: " + p.hand.length + "</span>", "</div>");
     return L.filter(Boolean).join("\n");
+  }
+  /* A player's two rows, the front row nearest the middle of the board. */
+  function sideHTML(s, who, preview, sel) {
+    var rows = TEAM[who] === "opp" ? ["back", "front"] : ["front", "back"];
+    return ['<div class="mtg-side mtg-' + TEAM[who] + (isPartner(who) ? " mtg-p2" : "") + (isFfa(s) && COLOUR[who] ? " mtg-" + COLOUR[who] : "") + '">',
+      rowHTML(s, who, rows[0], preview, sel), rowHTML(s, who, rows[1], preview, sel), "</div>"].join("\n");
   }
   function rowHTML(s, side, row, preview, sel) {
     var list = s[side][row], L = ['<div class="mtg-row mtg-' + row + '-row">'];
@@ -1350,14 +1468,14 @@ details[open] summary { margin-bottom: 8px; }
   function phaseOf(id) { for (var i = 0; i < PHASES.length; i++) if (PHASES[i][0] === id) return PHASES[i]; return PHASES[3]; }
   function midHTML(s, preview, sel) {
     var ph = phaseOf(s.phase), L = ['<div class="mtg-mid">'];
-    L.push('<span class="mtg-turn">Turn ' + s.turn + " · " + esc(s[s.active].name) + "</span>");
+    L.push('<span class="mtg-turn">Turn ' + s.turn + " · " + esc(activeName(s)) + "</span>");
     L.push('<span class="mtg-phases">' + TRACK.map(function (t) {
       var on = t[0] === ph[2];
       return '<span class="mtg-ph' + (on ? " mtg-ph-on" : "") + '">' + (on && LIT[ph[0]] ? LIT[ph[0]] : t[1]) + "</span>";
     }).join(" ") + "</span>");
     if (s.stack.length || preview) {
       var st = ['<div class="mtg-stack">', '<span class="mtg-stack-label">Stack' + (s.stack.length > 1 ? " (top first)" : "") + "</span>"];
-      st = st.concat(listHTML(s.stack, "stack", "stack", preview, sel));
+      st = st.concat(listHTML(s.stack, "stack", "stack", preview, sel, s));
       st.push(addBtn(preview, "stack", "Add a spell to the stack"));
       st.push("</div>");
       L.push(st.filter(Boolean).join("\n"));
@@ -1367,7 +1485,7 @@ details[open] summary { margin-bottom: 8px; }
   }
   /* Every card readers can see face-up. */
   function eachCard(s, fn) {
-    SIDES.forEach(function (side) {
+    inPlay(s).forEach(function (side) {
       var p = s[side];
       p.front.concat(p.back, p.cmd ? [p.cmd] : []).forEach(function (c) { if (!c.faceDown) fn(c); });
       p.hand.forEach(function (c) { if (c.revealed) fn(c); });
@@ -1376,18 +1494,24 @@ details[open] summary { margin-bottom: 8px; }
   }
   /* Every card, hidden ones too (used to make sure only one card glows). */
   function allCards(s, fn) {
-    SIDES.forEach(function (side) { var p = s[side]; p.front.concat(p.back, p.hand, p.cmd ? [p.cmd] : []).forEach(fn); });
+    DUELISTS.forEach(function (side) { var p = s[side]; p.front.concat(p.back, p.hand, p.cmd ? [p.cmd] : []).forEach(fn); });
     s.stack.forEach(fn);
   }
   function glowCard(s) { var g = null; eachCard(s, function (c) { if (c.glow && !g) g = c; }); return g; }
   function anyPoint(s) { var h = false; eachCard(s, function (c) { if (c.show === "panel" || (c.show === "pic" && c.img)) h = true; }); return h; }
 
+  /* Top to bottom: the opponent's side, the middle strip, the hero's side. With four players,
+     each partner sits on the outside of their team. */
   function boardHTML(s, preview, sel) {
-    var L = ['<div class="mtg-duel">', barHTML(s, "opp", preview, sel), handHTML(s, "opp", preview, sel),
-      '<div class="mtg-side mtg-opp">', rowHTML(s, "opp", "back", preview, sel), rowHTML(s, "opp", "front", preview, sel), "</div>",
-      midHTML(s, preview, sel),
-      '<div class="mtg-side mtg-me">', rowHTML(s, "me", "front", preview, sel), rowHTML(s, "me", "back", preview, sel), "</div>",
-      handHTML(s, "me", preview, sel), barHTML(s, "me", preview, sel)];
+    var four = isFour(s), mode = isFfa(s) ? " mtg-ffa" : s.mode === "2hg" ? " mtg-2hg" + (s.teamLife ? " mtg-team-life" : "") : "";
+    var L = ['<div class="mtg-duel' + mode + '">'];
+    (four ? ["opp2", "opp"] : ["opp"]).forEach(function (who) {
+      L.push(barHTML(s, who, preview, sel), handHTML(s, who, preview, sel), sideHTML(s, who, preview, sel));
+    });
+    L.push(midHTML(s, preview, sel));
+    (four ? ["me", "me2"] : ["me"]).forEach(function (who) {
+      L.push(sideHTML(s, who, preview, sel), handHTML(s, who, preview, sel), barHTML(s, who, preview, sel));
+    });
     var g = s.showInfo && glowCard(s);
     if (g) L.push(spotHTML(g, false));
     if (anyPoint(s)) L.push('<span class="mtg-tip">Point at or tap a card to see it up close.</span>');
@@ -1396,14 +1520,14 @@ details[open] summary { margin-bottom: 8px; }
     return L.join("\n").replace(/\n\s*\n/g, "\n");
   }
   function logResult(s) {
-    var p = s[s.log.who] || s.opp, d = Number(s.log.delta) || 0;
-    return { p: p, before: p.life, after: p.life + d, d: d };
+    var who = fixWho(s, s.log.who), p = s[lifeKey(s, who)], d = Number(s.log.delta) || 0;
+    return { p: p, name: lifeName(s, who), before: p.life, after: p.life + d, d: d };
   }
   function logHTML(s) {
     var x = logResult(s);
     return ['<div class="mtg-log' + (x.d > 0 ? " mtg-log-heal" : "") + '">',
       '<span class="mtg-log-act">' + esc(s.log.text) + "</span>",
-      esc(x.p.name) + " life " + x.before + " → " + x.after + ' <span class="mtg-delta">' + (x.d < 0 ? "−" : "+") + Math.abs(x.d) + "</span>",
+      esc(x.name) + " life " + x.before + " → " + x.after + ' <span class="mtg-delta">' + (x.d < 0 ? "−" : "+") + Math.abs(x.d) + "</span>",
       "</div>"].join("\n");
   }
 
@@ -1429,7 +1553,7 @@ details[open] summary { margin-bottom: 8px; }
     var c = newCard(), has = function (k) { return el.classList.contains(k); };
     c.tapped = has("mtg-tapped");
     c.combat = has("mtg-attacking") ? "atk" : has("mtg-blocking") ? "blk" : "";
-    c.owner = has("mtg-theirs") ? "opp" : "me";
+    c.owner = has("mtg-ring-purple") ? "opp2" : has("mtg-ring-gold") ? "me2" : (has("mtg-theirs") ? "opp" : "me") + (has("mtg-p2") ? "2" : "");
     var pt = el.querySelector(".mtg-pt"), loy = el.querySelector(".mtg-loy"), note = el.querySelector(".mtg-note");
     if (pt) setPT(c, txt(pt));
     if (loy) c.loyalty = txt(loy);
@@ -1457,16 +1581,22 @@ details[open] summary { margin-bottom: 8px; }
     var doc = new DOMParser().parseFromString(html, "text/html");
     var duel = doc.querySelector(".mtg-duel");
     if (!duel || !duel.querySelector(".mtg-side")) throw new Error("not a board");
-    var s = emptyState();
-    SIDES.forEach(function (side) {
-      var p = s[side], plate = duel.querySelector(".mtg-plate-" + side);
+    var s = emptyState(), cl = duel.classList;
+    s.mode = cl.contains("mtg-ffa") ? "ffa" : cl.contains("mtg-2hg") ? "2hg" : "single";
+    s.teamLife = s.mode === "2hg" ? cl.contains("mtg-team-life") : true;
+    /* Each player's bar, hand and side, in order down the board. Hover panels never hold these. */
+    var players = inPlay(s), bars = duel.querySelectorAll(".mtg-bar"), hands = duel.querySelectorAll(".mtg-hand"), sides = duel.querySelectorAll(".mtg-side");
+    players.forEach(function (who, i) {
+      var p = s[who], bar = bars[i], hand = hands[i], sideEl = sides[i];
+      var plate = bar && bar.querySelector(".mtg-plate");
       if (plate) {
-        p.name = txt(plate.querySelector(".mtg-pname")) || p.name;
-        p.life = clampInt(txt(plate.querySelector(".mtg-life-num")), -999, 9999);
-        p.poison = clampInt(txt(plate.querySelector(".mtg-poison")).replace(/\D/g, ""), 0, 99);
-        if (plate.classList.contains("mtg-active")) s.active = side;
+        var life = s[lifeKey(s, who)], pn = plate.querySelectorAll(".mtg-pn");
+        if (pn.length === 2) { s[TEAM[who]].name = txt(pn[0]); s[TEAM[who] + "2"].name = txt(pn[1]); }
+        else p.name = txt(plate.querySelector(".mtg-pname")) || p.name;
+        life.life = clampInt(txt(plate.querySelector(".mtg-life-num")), -999, 9999);
+        life.poison = clampInt(txt(plate.querySelector(".mtg-poison")).replace(/\D/g, ""), 0, 99);
+        if (plate.classList.contains("mtg-active")) s.active = teamLife(s) ? TEAM[who] : who;
       }
-      var bar = plate ? plate.closest(".mtg-bar") : null;
       if (bar) {
         forEach(bar.querySelectorAll(".mtg-pile"), function (pile) {
           var label = txt(pile.querySelector(".mtg-plabel")).toLowerCase(), n = clampInt(txt(pile.querySelector(".mtg-count")), 0, 999);
@@ -1477,13 +1607,14 @@ details[open] summary { margin-bottom: 8px; }
         var cmd = bar.querySelector(".mtg-card");
         p.cmd = cmd ? parseCard(cmd, "cmd") : null;
       }
-      var sideEl = duel.querySelector(".mtg-" + side);
       p.front = cardsIn(sideEl && sideEl.querySelector(".mtg-front-row"), "field");
       p.back = cardsIn(sideEl && sideEl.querySelector(".mtg-back-row"), "field");
+      p.hand = cardsIn(hand, "hand");
+      if (hand) {
+        var hn = hand.querySelector(".mtg-hname"); if (hn) p.name = txt(hn) || p.name;
+        if (hand.querySelector(".mtg-hand-act")) s.active = teamLife(s) ? TEAM[who] : who;
+      }
     });
-    var hands = duel.querySelectorAll(".mtg-hand");
-    s.opp.hand = cardsIn(hands[0], "hand");
-    s.me.hand = cardsIn(hands[1], "hand");
     var mid = duel.querySelector(".mtg-mid");
     if (mid) {
       var tm = txt(mid.querySelector(".mtg-turn")).match(/Turn\s*(\d+)/); if (tm) s.turn = clampInt(tm[1], 1, 999);
@@ -1508,7 +1639,7 @@ details[open] summary { margin-bottom: 8px; }
   var KEY = "mtg-duel-builder-v1";
   var state, sel = null, lookupMsg = "", lastResults = [], printsMsg = "", lastPrints = [];
   try { state = JSON.parse(localStorage.getItem(KEY)); } catch (e) { state = null; }
-  if (!state || state.v !== 1 || !state.opp || !state.me) state = exampleState();
+  if (!state || state.v !== 1 || !state.opp || !state.me) state = exampleState(); else upgrade(state);
   function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) { /* storage unavailable: keep working without it */ } }
 
   /* ---------- Rendering ---------- */
@@ -1525,17 +1656,43 @@ details[open] summary { margin-bottom: 8px; }
   }
 
   function fillSideInputs() {
-    SIDES.forEach(function (side) {
+    DUELISTS.forEach(function (side) {
       var p = state[side];
       $("#" + side + "-name").value = p.name; $("#" + side + "-life").value = p.life;
       $("#" + side + "-poison").value = p.poison; $("#" + side + "-hand").value = p.hand.length;
     });
+    $("#mode").value = state.mode; $("#team-life").checked = state.teamLife;
     $("#turn").value = state.turn; $("#phase").value = state.phase; $("#show-info").checked = state.showInfo;
     $("#log-text").value = state.log.text; $("#log-delta").value = state.log.delta;
+    fillMode();
     fillNames();
   }
+  /* The player labels for each kind of game, top of the board first. */
+  var FORM_NAMES = {
+    single: { opp: "Opponent (top)", me: "Hero (bottom)" },
+    "2hg": { opp2: "Opponent’s partner (top)", opp: "Opponent", me: "Hero", me2: "Hero’s partner (bottom)" },
+    ffa: { opp2: "1st player (top, purple)", opp: "2nd player (red)", me: "3rd player (blue)", me2: "4th player (bottom, gold)" }
+  };
+  /* Shows the partners' rows only with four players, and their own life and poison only when
+     their team doesn't share them. */
+  function fillMode() {
+    var four = isFour(state), shared = teamLife(state), names = FORM_NAMES[state.mode] || FORM_NAMES.single;
+    forEach(document.querySelectorAll(".four-only"), function (el) { el.hidden = !four; });
+    forEach(document.querySelectorAll(".team-only"), function (el) { el.hidden = state.mode !== "2hg"; });
+    forEach(document.querySelectorAll(".solo-life"), function (el) { el.hidden = !four || shared; });
+    DUELISTS.forEach(function (who) { if (names[who]) $("#" + who + "-label").textContent = names[who]; });
+    SIDES.forEach(function (t) {
+      $("#" + t + "-life-label").textContent = shared ? "Team life" : "Life";
+      $("#" + t + "-poison-label").textContent = shared ? "Team poison" : "Poison";
+    });
+    $("#mode-note").textContent = state.mode === "2hg"
+      ? (shared ? "Each partner has their own library, graveyard, hand and battlefield. Each team shares one life total (30 to start) and poison count, and takes its turn together." :
+        "Each partner has their own library, graveyard, hand, battlefield and life total.") + " Partners sit on the outside, above and below their teammates."
+      : isFfa(state) ? "Every player has their own library, graveyard, hand, battlefield and life total, and a colour of their own on the board." : "";
+  }
   function fillNames() {
-    var o = '<option value="opp">' + esc(state.opp.name) + '</option><option value="me">' + esc(state.me.name) + "</option>";
+    var o = opt(whoChoices(state), "");
+    state.log.who = fixWho(state, state.log.who); state.active = fixWho(state, state.active);
     $("#log-who").innerHTML = o; $("#log-who").value = state.log.who;
     $("#active").innerHTML = o; $("#active").value = state.active;
   }
@@ -1619,7 +1776,7 @@ details[open] summary { margin-bottom: 8px; }
       h += '<div class="field"><span class="legend">In combat</span>' + seg("f-combat", "combat", [["", "No"], ["atk", "Attacking"], ["blk", "Blocking"]], c.combat) + "</div>";
     }
     if (t.ctx !== "hand") h += text("f-note", "note", "Counters or note (a small label on the card)", c.note, { ph: "+1/+1 ×2" });
-    if (t.ctx === "stack") h += '<div class="field"><label for="f-owner">Whose spell</label><select id="f-owner" data-f="owner" data-struct>' + opt([["me", state.me.name], ["opp", state.opp.name]], c.owner) + "</select></div>";
+    if (t.ctx === "stack") h += '<div class="field"><label for="f-owner">Whose spell</label><select id="f-owner" data-f="owner" data-struct>' + opt((isFour(state) ? ["me", "me2", "opp", "opp2"] : ["me", "opp"]).map(function (w) { return [w, state[w].name]; }), inPlay(state).indexOf(c.owner) >= 0 ? c.owner : TEAM[c.owner] || "me") + "</select></div>";
     h += '<div class="checks">' + check("f-glow", "glow", c.glow, "Highlight this card (golden glow; its details show under the board)") + "</div>";
     h += moveButtons(t);
     return h;
@@ -1881,8 +2038,8 @@ details[open] summary { margin-bottom: 8px; }
   forEach(document.querySelectorAll("[data-p]"), function (el) {
     el.addEventListener(el.type === "checkbox" || el.tagName === "SELECT" ? "change" : "input", function () {
       var path = el.dataset.p.split("."), v = el.type === "checkbox" ? el.checked : el.value;
-      if (/life$/.test(el.id)) v = clampInt(v, -999, 9999);
-      if (/poison$/.test(el.id)) v = clampInt(v, 0, 99);
+      if (el.type === "number" && /life$/.test(el.id)) v = clampInt(v, -999, 9999);
+      if (el.type === "number" && /poison$/.test(el.id)) v = clampInt(v, 0, 99);
       if (el.id === "turn") v = clampInt(v, 1, 999);
       if (/hand$/.test(el.id)) {
         /* Changing the hand size adds hidden cards at the end, or removes cards from the end. */
@@ -1890,6 +2047,15 @@ details[open] summary { margin-bottom: 8px; }
         while (cards.length < n) cards.push(newCard());
         cards.length = n;
         if (sel && !target()) { sel = null; renderEditor(); }
+      } else if (el.id === "mode" || el.id === "team-life") {
+        var wasShared = teamLife(state);
+        state[path[0]] = v;
+        /* Two-Headed Giant teams start at 30 life; going back to one life total each starts at 20. */
+        if (teamLife(state) && !wasShared) SIDES.forEach(function (t) { if (state[t].life === 20) state[t].life = 30; });
+        if (!teamLife(state) && wasShared) SIDES.forEach(function (t) { if (state[t].life === 30) state[t].life = 20; });
+        /* The partners' cards are kept for when they come back, but one of them can't stay selected while they're off the board. */
+        if (sel && inPlay(state).indexOf(sel.split(".")[0]) < 0 && sel.split(".")[0] !== "stack") sel = null;
+        fillSideInputs(); renderEditor();
       } else if (path.length === 2) state[path[0]][path[1]] = v; else state[path[0]] = v;
       render();
       if (/name$/.test(el.id)) { fillNames(); if (sel) renderEditor(); }
